@@ -26,10 +26,14 @@ module vga_controller (input  logic clk,
     localparam V_TOTAL      = 525;  // Total
 
     // calculated values
-    localparam H_SYNC_START = H_DISPLAY + H_FRONT;           // 656
-    localparam H_SYNC_END   = H_DISPLAY + H_FRONT + H_SYNC;  // 752
-    localparam V_SYNC_START = V_DISPLAY + V_FRONT;           // 490
-    localparam V_SYNC_END   = V_DISPLAY + V_FRONT + V_SYNC;  // 492
+    //localparam H_SYNC_START = H_DISPLAY + H_FRONT + H_BACK;           // 656
+    //localparam H_SYNC_END   = H_DISPLAY + H_FRONT + H_BACK + H_SYNC;  // 752
+    //localparam V_SYNC_START = V_DISPLAY + V_FRONT;           // 490
+    //localparam V_SYNC_END   = V_DISPLAY + V_FRONT + V_SYNC;  // 492
+    localparam H_DISPLAY_START = H_SYNC + H_BACK;
+    localparam H_DISPLAY_END = H_SYNC + H_BACK + H_DISPLAY;
+    localparam V_DISPLAY_START = V_SYNC + V_BACK;
+    localparam V_DISPLAY_END = V_SYNC + V_BACK + V_DISPLAY;
     
     always_ff @(posedge clk, negedge reset_n) begin
         if (!reset_n) begin
@@ -40,7 +44,7 @@ module vga_controller (input  logic clk,
         end else begin
             if (hcount == H_TOTAL - 1) begin
                 hcount <= 0;
-                if (vcount == V_TOTAL - 1) begin // this should be one more than the limit, bc we are already adding 1 to it (so i removed the "- 1")
+                if (vcount == V_TOTAL - 1) begin
                     vcount <= 0;
                 end else begin
                     vcount <= vcount + 1;
@@ -55,10 +59,10 @@ module vga_controller (input  logic clk,
         end
     end
 
-    assign hsync = ~(hcount >= H_SYNC_START && hcount < H_SYNC_END); // active low
-    assign vsync = ~(vcount >= V_SYNC_START && vcount < V_SYNC_END); // active low
+    assign hsync = ~(hcount < H_SYNC); // active low
+    assign vsync = ~(vcount < V_SYNC); // active low
 
     // the inverse of this will tell me if i am in a blank region (anywhere where i am not in the display zone)
-    assign active_video = ((hcount >= 0 && hcount < H_DISPLAY) && (vcount >= 0 && vcount < V_DISPLAY));
+    assign active_video = ((hcount >= H_DISPLAY_START && hcount < H_DISPLAY_END) && (vcount >= V_DISPLAY_START && vcount < V_DISPLAY_END));
 
 endmodule

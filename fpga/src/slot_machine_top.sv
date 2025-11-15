@@ -57,6 +57,7 @@ module slot_machine_top (input  logic clk,
         .hcount           (hcount),
         .vcount           (vcount),
         .vsync            (vsync),
+        .active_video     (active_video);
         .final1_sprite    (reel1_idx[2:0]),  // assuming 3-bit sprite IDs
         .final2_sprite    (reel2_idx[2:0]),
         .final3_sprite    (reel3_idx[2:0]),

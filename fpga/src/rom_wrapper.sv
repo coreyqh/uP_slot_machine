@@ -11,26 +11,40 @@ module rom_wrapper (
     
     // --- 1. Explicit Memory Declarations (28 Separate 1D Arrays) ---
     // This is the key change: replacing the single 2D array with 28 separate 1D arrays
-    logic [15:0] s0_bram0 [0:255]; logic [15:0] s0_bram1 [0:255]; 
-    logic [15:0] s0_bram2 [0:255]; logic [15:0] s0_bram3 [0:255];
+    logic [15:0] s0_bram0 [0:255]; 
+    logic [15:0] s0_bram1 [0:255]; 
+    logic [15:0] s0_bram2 [0:255]; 
+    logic [15:0] s0_bram3 [0:255];
 
-    logic [15:0] s1_bram0 [0:255]; logic [15:0] s1_bram1 [0:255];
-    logic [15:0] s1_bram2 [0:255]; logic [15:0] s1_bram3 [0:255];
+    logic [15:0] s1_bram0 [0:255]; 
+    logic [15:0] s1_bram1 [0:255];
+    logic [15:0] s1_bram2 [0:255]; 
+    logic [15:0] s1_bram3 [0:255];
 
-    logic [15:0] s2_bram0 [0:255]; logic [15:0] s2_bram1 [0:255];
-    logic [15:0] s2_bram2 [0:255]; logic [15:0] s2_bram3 [0:255];
+    logic [15:0] s2_bram0 [0:255]; 
+    logic [15:0] s2_bram1 [0:255];
+    logic [15:0] s2_bram2 [0:255]; 
+    logic [15:0] s2_bram3 [0:255];
 
-    logic [15:0] s3_bram0 [0:255]; logic [15:0] s3_bram1 [0:255];
-    logic [15:0] s3_bram2 [0:255]; logic [15:0] s3_bram3 [0:255];
+    logic [15:0] s3_bram0 [0:255]; 
+    logic [15:0] s3_bram1 [0:255];
+    logic [15:0] s3_bram2 [0:255]; 
+    logic [15:0] s3_bram3 [0:255];
 
-    logic [15:0] s4_bram0 [0:255]; logic [15:0] s4_bram1 [0:255];
-    logic [15:0] s4_bram2 [0:255]; logic [15:0] s4_bram3 [0:255];
+    logic [15:0] s4_bram0 [0:255]; 
+    logic [15:0] s4_bram1 [0:255];
+    logic [15:0] s4_bram2 [0:255]; 
+    logic [15:0] s4_bram3 [0:255];
 
-    logic [15:0] s5_bram0 [0:255]; logic [15:0] s5_bram1 [0:255];
-    logic [15:0] s5_bram2 [0:255]; logic [15:0] s5_bram3 [0:255];
+    logic [15:0] s5_bram0 [0:255]; 
+    logic [15:0] s5_bram1 [0:255];
+    logic [15:0] s5_bram2 [0:255]; 
+    logic [15:0] s5_bram3 [0:255];
 
-    logic [15:0] s6_bram0 [0:255]; logic [15:0] s6_bram1 [0:255];
-    logic [15:0] s6_bram2 [0:255]; logic [15:0] s6_bram3 [0:255];
+    logic [15:0] s6_bram0 [0:255]; 
+    logic [15:0] s6_bram1 [0:255];
+    logic [15:0] s6_bram2 [0:255]; 
+    logic [15:0] s6_bram3 [0:255];
 
 
     // --- 2. Memory Initialization (28 Separate $readmemh calls) ---

@@ -476,14 +476,24 @@ module memory_controller ( // TODO: need to define bus lengths
         end
     end
 
+    always_ff @(posedge clk, negedge reset_n) begin
+        if (!reset_n) begin
+            active_video_d1 <= 1'b0;
+            active_video_d2 <= 1'b0;
+        end else begin
+            active_video_d1 <= active_video;
+            active_video_d2 <= active_video_d1;
+        end
+    end
+
     logic [2:0] rgb_rom;
     always_ff @(posedge clk, negedge reset_n) begin
         if (!reset_n) begin
             pixel_rgb <= 3'b000; // black background color
-        end else if (active_video && inside_reel_r2) begin 
+        end else if (active_video_d2 && inside_reel_r2) begin 
             pixel_rgb <= rom_data_reg; // rbg from ROM
-        end else if (active_video) begin
-            pixel_rgb <= 3'b001; // background color
+        end else if (active_video_d2) begin
+            pixel_rgb <= 3'b010; // background color
         end else begin
             pixel_rgb <= 3'b000; // black background color
         end

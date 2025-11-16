@@ -15,6 +15,7 @@ module memory_controller ( // TODO: need to define bus lengths
     input logic [10:0] hcount, 
     input logic [9:0] vcount,
     input logic vsync,
+    input logic active_video,
     input logic [2:0] final1_sprite, 
     input logic [2:0] final2_sprite, 
     input logic [2:0] final3_sprite,
@@ -394,23 +395,14 @@ module memory_controller ( // TODO: need to define bus lengths
     logic [5:0] x_in_sprite, y_in_sprite;
     logic [9:0] y_in_reel;
     logic [2:0] seq_position;
+    logic inside_reel;
     //logic [$clog2(NUM_SPRITES*SPRITE_WIDTH*SPRITE_HEIGHT)-1:0] address; // each address here will hodl an rgb value
     
     assign inside_reel1_prev = (hcount >= REEL1_START_H && hcount < REEL1_START_H + SPRITE_WIDTH) && (vcount >= REELS_START_V && vcount < REELS_END_V);
     assign inside_reel2_prev = (hcount >= REEL2_START_H && hcount < REEL2_START_H + SPRITE_WIDTH) && (vcount >= REELS_START_V && vcount < REELS_END_V);
     assign inside_reel3_prev = (hcount >= REEL3_START_H && hcount < REEL3_START_H + SPRITE_WIDTH) && (vcount >= REELS_START_V && vcount < REELS_END_V);
 
-    always_ff @(posedge clk, negedge reset_n) begin
-        if (!reset_n) begin
-            inside_reel1 <= 0;
-            inside_reel2 <= 0;
-            inside_reel3 <= 0;
-        end else begin
-            inside_reel1 <= inside_reel1_prev;
-            inside_reel2 <= inside_reel2_prev;
-            inside_reel3 <= inside_reel3_prev;
-        end
-    end
+    assign inside_reel_comb = inside_reel1_prev | inside_reel2_prev | inside_reel3_prev;
 
     always_comb begin
         logic [9:0] y_in_reel;
@@ -422,10 +414,10 @@ module memory_controller ( // TODO: need to define bus lengths
         
         if (inside_reel1_prev) begin
             y_in_reel = (vcount - REELS_START_V + reel1_offset) % TOTAL_HEIGHT;
-            seq_pos = y_in_reel[8:6]; // divide by 64
-            sprite_idx = reel1_sequence[seq_pos];
-            x_in_sprite = hcount - REEL1_START_H;
-            y_in_sprite = y_in_reel[5:0]; // % 64
+            seq_pos = y_in_reel[8:6]; // divide by 64 to get which sequence sprite we are on (each sprite has a height of 64 so this will tell us sprite order)
+            sprite_idx = reel1_sequence[seq_pos]; // but sprite order is not the same for each reel, so map sprite index to actual reel's sprite
+            x_in_sprite = hcount - REEL1_START_H; // find horizontal offset, simple
+            y_in_sprite = y_in_reel[5:0]; // % 64 to find y location offset
         end else if (inside_reel2_prev) begin
             y_in_reel = (vcount - REELS_START_V + reel2_offset) % TOTAL_HEIGHT;
             seq_pos = y_in_reel[8:6];
@@ -441,28 +433,69 @@ module memory_controller ( // TODO: need to define bus lengths
         end
     end
 
+    logic [2:0] sprite_idx_r;
+    logic [5:0] x_in_sprite_r, y_in_sprite_r;
+    logic inside_reel_r;
+    
+    // want to clock inputs into rom so we stabalize them at the same/consistent value, otherwie it is pure combinational changing at diff times
+    always_ff @(posedge clk, negedge reset_n) begin
+        if (!reset_n) begin
+            sprite_idx_r <= 3'd0;
+            x_in_sprite_r  <= 6'd0;
+            y_in_sprite_r  <= 6'd0;
+            inside_reel_r <= 1'b0;
+            active_video_d1 <= 1'b0;
+        end else begin
+            sprite_idx_r <= sprite_idx;
+            x_in_sprite_r  <= x_in_sprite;
+            y_in_sprite_r  <= y_in_sprite;
+            inside_reel_r <= inside_reel_comb;
+            active_video_d1 <= active_video;
+        end
+    end
+
     assign address = ((sprite_idx * SPRITE_HEIGHT * SPRITE_WIDTH) + (SPRITE_HEIGHT * y_in_sprite) + x_in_sprite); // cinvert to bytes?
+
+    logic [2:0] rgb_rom;
     // INSTANTIATE ROM HERE, AND AS AN OUTPUT TAKE rgb_rom; - use address
     rom_wrapper rom_wrapper (
         .clk           (clk),
-        .sprite_idx    (sprite_idx),
-        .x_in_sprite   (x_in_sprite),
-        .y_in_sprite   (y_in_sprite),
+        .sprite_idx    (sprite_idx_r),
+        .x_in_sprite   (x_in_sprite_r),
+        .y_in_sprite   (y_in_sprite_r),
         .pixel_rgb     (rgb_rom)
     );
     
+    // pipeline to wait for one cycle latenxy in rom read for the data
     logic [2:0] rom_data_reg;
+    logic in_reel_r2, in_reel_r3;
+    logic active_video_d3;
     always_ff @(posedge clk, negedge reset_n) begin
-        if (!reset_n) rom_data_reg <= 3'b000;
-        else rom_data_reg <= rgb_rom; // rom_data is BRAM output (next-cycle if BRAM sync)
+        if (!reset_n) begin
+            rom_data_reg <= 3'b000;
+            inside_reel_r2 <= 1'b0;
+            active_video_d2 <= 1'b0;
+        end else begin
+            // this when we do first mem read to get the data
+            inside_reel_r2 <= inside_reel_r; 
+            active_video_d2 <= active_video_d1; // store active vudeo signal too
+
+            // this is when we get the pixel in the data which is also clocked for stability 
+            rom_data_reg <= rgb_rom; // capture BRAM output
+            in_reel_r3      <= in_reel_r2; // This is the control signal synchronized with rom_data_reg
+            active_video_d3 <= active_video_d2;
+
+        end
     end
 
     logic [2:0] rgb_rom;
     always_ff @(posedge clk, negedge reset_n) begin
         if (!reset_n) begin
             pixel_rgb <= 3'b000; // black background color
-        end else if (inside_reel1 | inside_reel2 | inside_reel3) begin 
+        end else if (active_video_d3 && inside_reel_r3) begin 
             pixel_rgb <= rom_data_reg; // rbg from ROM
+        end else if (active_video_d3) begin
+            pixel_rgb <= 3'b010; // background color
         end else begin
             pixel_rgb <= 3'b000; // black background color
         end

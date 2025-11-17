@@ -21,7 +21,8 @@ module memory_controller ( // TODO: need to define bus lengths
     input logic [2:0] final3_sprite,
     input logic start_spin,
     output logic [2:0] pixel_rgb,
-    output logic done
+    output logic done,
+	output logic [2:0] state_led
 );
 
     localparam NUM_SPRITES = 7;
@@ -32,11 +33,11 @@ module memory_controller ( // TODO: need to define bus lengths
 
     localparam TOTAL_HEIGHT = NUM_SPRITES * SPRITE_HEIGHT * PIXEL_SCALE;
 
-    localparam REEL1_START_H = 160; // TODO : calculate if these are ok values?
-    localparam REEL2_START_H = 288;
-    localparam REEL3_START_H = 416;
-    localparam REELS_START_V = 40;
-    localparam REEL_DISPLAY_HEIGHT = 192;  // Show 384 pixels tall (3 full sprites!) // could be 3
+    localparam REEL1_START_H = 190; // TODO : calculate if these are ok values?
+    localparam REEL2_START_H = 398;
+    localparam REEL3_START_H = 606;
+    localparam REELS_START_V = 50;
+    localparam REEL_DISPLAY_HEIGHT = 430;  // Show 384 pixels tall (3 full sprites!) // could be 3
     localparam REELS_END_V = REELS_START_V + REEL_DISPLAY_HEIGHT - 1;  // 423
     // Screen layout for 1024×600
     // localparam SCREEN_WIDTH = 1024;
@@ -60,7 +61,7 @@ module memory_controller ( // TODO: need to define bus lengths
     // localparam REEL2_STRIDE = 3'd3;  // Reel 2: 2→5→0→3→6→1→4→7→2...
     // localparam REEL3_STRIDE = 3'd6;  // Reel 3: 5→3→1→7→5→3→1→7...
 
-    localparam PIXELS_PER_FRAME = 2;
+    localparam PIXELS_PER_FRAME = 8;
     
 
     // Reel sequences (LUTs)
@@ -102,7 +103,7 @@ module memory_controller ( // TODO: need to define bus lengths
     logic [9:0] reel1_ending_offset, reel2_ending_offset, reel3_ending_offset;
     localparam SPRITE_SIZE = SPRITE_HEIGHT;
 
-    typedef enum [2:0] {IDLE, START_SPINNING, REEL1_STOP, REEL2_STOP, REEL3_STOP} statetype;
+    typedef enum logic [2:0] {IDLE, START_SPINNING, REEL1_STOP, REEL2_STOP, REEL3_STOP, DEAD} statetype;
     statetype state, next_state;
 
     logic in_reel; // this will be a signal which is true if hcount/vcount is in a reel boundary, and otherwise it will fill with background color
@@ -110,7 +111,9 @@ module memory_controller ( // TODO: need to define bus lengths
     // HUH question - do we need to do this wait gating thing, im a little confused how to time the signals on the vga, because if all the reels update on the same clk cycle, only one rgb is produced so woulndt we have to halt everything else until its the correct turn?
 
     logic [2:0] reel1_spin_amt, reel2_spin_amt, reel3_spin_amt;
+	logic [2:0] next_reel1_spin_amt, next_reel2_spin_amt, next_reel3_spin_amt;
     logic [6:0] reel1_pixel_ct, reel2_pixel_ct, reel3_pixel_ct;
+	logic [2:0] reel1_final_sprite, reel2_final_sprite, reel3_final_sprite;
     
 
     logic frame_done;
@@ -122,6 +125,7 @@ module memory_controller ( // TODO: need to define bus lengths
 
     // doing a reverse lookup: sprite to position
     logic [2:0] reel1_target_pos, reel2_target_pos, reel3_target_pos;
+	logic [2:0] next_state_led;
     
     always_comb begin
         // Reel 1 - just sequential
@@ -187,6 +191,7 @@ module memory_controller ( // TODO: need to define bus lengths
             reel1_final_sprite <= 0;
             reel2_final_sprite <= 0;
             reel3_final_sprite <= 0;
+			state_led <= 3'b0;
         end else begin
             if (state == IDLE && start_spin) begin
                 reel1_final_sprite <= final1_sprite;
@@ -203,6 +208,8 @@ module memory_controller ( // TODO: need to define bus lengths
                 reel1_spin_amt <= next_reel1_spin_amt;
                 reel2_spin_amt <= next_reel2_spin_amt;
                 reel3_spin_amt <= next_reel3_spin_amt;
+				
+				state_led <= next_state_led;
             end
 
             // reel1_address <= next_reel1_address;
@@ -210,32 +217,7 @@ module memory_controller ( // TODO: need to define bus lengths
             // reel3_address <= next_reel3_address;
             
         end
-        // else begin
-        //     state <= next_state;
-        //     if (reel1_pixel_count < TOTAL_HEIGHT && in_reel) begin
-        //         reel1_pixel_count <= reel1_pixel_count + 1;
-        //     end else if (reel1_pixel_count < TOTAL_HEIGHT) begin
-        //         reel1_pixel_count <= reel1_pixel_count;
-        //     end else begin
-        //         reel1_pixel_count <= 0; // TODO: is this correct?
-        //     end
-
-        //     if (reel2_pixel_count < TOTAL_HEIGHT && in_reel) begin
-        //         reel2_pixel_count <= reel2_pixel_count + 1;
-        //     end else if (reel2_pixel_count < TOTAL_HEIGHT) begin
-        //         reel2_pixel_count <= reel2_pixel_count;
-        //     end else begin
-        //         reel2_pixel_count <= 0; // TODO: is this correct?
-        //     end
-
-        //     if (reel3_pixel_count < TOTAL_HEIGHT && in_reel) begin
-        //         reel3_pixel_count <= reel3_pixel_count + 1;
-        //     end else if (reel3_pixel_count < TOTAL_HEIGHT) begin
-        //         reel3_pixel_count <= reel3_pixel_count;
-        //     end else begin
-        //         reel3_pixel_count <= 0; // TODO: is this correct?
-        //     end
-        // end
+        
     end
 
     always_comb begin
@@ -247,6 +229,7 @@ module memory_controller ( // TODO: need to define bus lengths
         next_reel1_spin_amt = reel1_spin_amt;
         next_reel2_spin_amt = reel2_spin_amt;
         next_reel3_spin_amt = reel3_spin_amt;
+		next_state_led = state_led;
         done = 0;
 
         case(state)
@@ -262,21 +245,23 @@ module memory_controller ( // TODO: need to define bus lengths
                     next_reel1_spin_amt = 3'd5;  // All reels do 5 base rotations
                     next_reel2_spin_amt = 3'd2;  // Reel 2 does 2 extra rotations
                     next_reel3_spin_amt = 3'd2;  // Reel 3 does 2 extra rotations
+					
+					next_state_led = 3'b000;
                 end
             end
 
-            START_SPINNING: begin
+            START_SPINNING: begin 
                 // All three reels spin (offset increases by 2 pixels per frame)
                 // this is the offset in a frame, since everything is calcuated for a reel relative to here (the starting point, which shifts by 2 every frame to make it look continuous)
                 next_reel1_offset = reel1_offset + PIXELS_PER_FRAME;
                 next_reel2_offset = reel2_offset + PIXELS_PER_FRAME; // replace errors with RHS
-                next_reel3_offset = reel3_offset + PIXELS_PER_FRAME;
+                next_reel3_offset = reel3_offset + PIXELS_PER_FRAME; 
 
-                if (next_reel1_offset >= TOTAL_HEIGHT) begin
+                if (next_reel1_offset >= TOTAL_HEIGHT) begin  
                     next_reel1_offset = next_reel1_offset - TOTAL_HEIGHT; // reel1_offset + PIXELS_PER_FRAME - TOTAL_HEIGHT;
                     
                     if (reel1_spin_amt > 0) begin
-                        next_reel1_spin_amt = reel1_spin_amt - 1;
+                        next_reel1_spin_amt = reel1_spin_amt - 1; 
                     end else begin
                         next_state = REEL1_STOP;
                     end
@@ -286,6 +271,8 @@ module memory_controller ( // TODO: need to define bus lengths
                     next_reel2_offset = next_reel2_offset - TOTAL_HEIGHT; // reel2_offset + PIXELS_PER_FRAME - TOTAL_HEIGHT;
                 if (next_reel3_offset >= TOTAL_HEIGHT)
                     next_reel3_offset = next_reel3_offset - TOTAL_HEIGHT;
+				
+				next_state_led = 3'b100;
 
             end
 
@@ -297,7 +284,7 @@ module memory_controller ( // TODO: need to define bus lengths
                 // also csn only check this once a frame is done, so this is good to happen on the frame clk
                 // we need to get reel 1 to land on the ending sprite
                 if (reel1_offset != reel1_ending_offset) begin // TODO: IMP - this offset is where we start displaying from, so this should NOT be equal to the final sprite's startign address - ight have to be two sprites above target or smthg
-                    next_reel1_offset = reel1_offset + 1; // NOTE: here instead of adding PIXELS_PER_FRAME, we are going to slow doen and only add 1 to not overshoot
+                    next_reel1_offset = reel1_offset + 4; // NOTE: here instead of adding PIXELS_PER_FRAME, we are going to slow doen and only add 1 to not overshoot
                     if (next_reel1_offset >= TOTAL_HEIGHT) begin
                         next_reel1_offset = next_reel1_offset - TOTAL_HEIGHT;
                     end
@@ -326,6 +313,8 @@ module memory_controller ( // TODO: need to define bus lengths
 
                 if (next_reel3_offset >= TOTAL_HEIGHT)
                     next_reel3_offset = next_reel3_offset - TOTAL_HEIGHT;
+				
+				next_state_led = 3'b101;
             end
 
             REEL2_STOP: begin
@@ -334,7 +323,7 @@ module memory_controller ( // TODO: need to define bus lengths
 
                 // we need to get reel 1 to land on the ending sprite
                 if (reel2_offset != reel2_ending_offset) begin // TODO: IMP - this offset is where we start displaying from, so this should NOT be equal to the final sprite's startign address - ight have to be two sprites above target or smthg
-                    next_reel2_offset = reel2_offset + 1; // NOTE: here instead of adding PIXELS_PER_FRAME, we are going to slow doen and only add 1 to not overshoot
+                    next_reel2_offset = reel2_offset + 4; // NOTE: here instead of adding PIXELS_PER_FRAME, we are going to slow doen and only add 1 to not overshoot
                     if (next_reel2_offset >= TOTAL_HEIGHT) begin
                         next_reel2_offset = next_reel2_offset - TOTAL_HEIGHT;
                     end
@@ -359,6 +348,8 @@ module memory_controller ( // TODO: need to define bus lengths
                         next_state = REEL3_STOP;
                     end
                 end
+				
+				next_state_led = 3'b001;
             end
 
             REEL3_STOP: begin
@@ -366,7 +357,7 @@ module memory_controller ( // TODO: need to define bus lengths
 
                 // we need to get reel 1 to land on the ending sprite
                 if (reel3_offset != reel3_ending_offset) begin // TODO: IMP - this offset is where we start displaying from, so this should NOT be equal to the final sprite's startign address - ight have to be two sprites above target or smthg
-                    next_reel3_offset = reel3_offset + 1; // NOTE: here instead of adding PIXELS_PER_FRAME, we are going to slow doen and only add 1 to not overshoot
+                    next_reel3_offset = reel3_offset + 4; // NOTE: here instead of adding PIXELS_PER_FRAME, we are going to slow doen and only add 1 to not overshoot
                     if (next_reel3_offset >= TOTAL_HEIGHT) begin
                         next_reel3_offset = next_reel3_offset - TOTAL_HEIGHT;
                     end
@@ -381,10 +372,17 @@ module memory_controller ( // TODO: need to define bus lengths
                             next_reel3_offset = reel3_ending_offset;
                     end
                 end else begin
-                    next_state = IDLE;
+                    next_state = DEAD;
                     done = 1;
                 end
+				
+				next_state_led = 3'b110;
             end
+			
+			DEAD: begin
+				next_state = DEAD;
+				next_state_led = 3'b111;
+			end
         endcase
     end
 
@@ -395,12 +393,12 @@ module memory_controller ( // TODO: need to define bus lengths
     logic [5:0] x_in_sprite, y_in_sprite;
     logic [9:0] y_in_reel;
     logic [2:0] seq_position;
-    logic inside_reel;
+    logic inside_reel, inside_reel_comb;
     //logic [$clog2(NUM_SPRITES*SPRITE_WIDTH*SPRITE_HEIGHT)-1:0] address; // each address here will hodl an rgb value
     
-    assign inside_reel1_prev = (hcount >= REEL1_START_H && hcount < REEL1_START_H + SPRITE_WIDTH) && (vcount >= REELS_START_V && vcount < REELS_END_V);
-    assign inside_reel2_prev = (hcount >= REEL2_START_H && hcount < REEL2_START_H + SPRITE_WIDTH) && (vcount >= REELS_START_V && vcount < REELS_END_V);
-    assign inside_reel3_prev = (hcount >= REEL3_START_H && hcount < REEL3_START_H + SPRITE_WIDTH) && (vcount >= REELS_START_V && vcount < REELS_END_V);
+    assign inside_reel1_prev = (hcount >= REEL1_START_H && hcount < REEL1_START_H + SPRITE_WIDTH + SPRITE_WIDTH) && (vcount >= REELS_START_V && vcount < REELS_END_V);
+    assign inside_reel2_prev = (hcount >= REEL2_START_H && hcount < REEL2_START_H + SPRITE_WIDTH + SPRITE_WIDTH) && (vcount >= REELS_START_V && vcount < REELS_END_V);
+    assign inside_reel3_prev = (hcount >= REEL3_START_H && hcount < REEL3_START_H + SPRITE_WIDTH + SPRITE_WIDTH) && (vcount >= REELS_START_V && vcount < REELS_END_V);
 
     assign inside_reel_comb = inside_reel1_prev | inside_reel2_prev | inside_reel3_prev;
 
@@ -414,21 +412,21 @@ module memory_controller ( // TODO: need to define bus lengths
         
         if (inside_reel1_prev) begin
             y_in_reel = (vcount - REELS_START_V + reel1_offset) % TOTAL_HEIGHT;
-            seq_pos = y_in_reel[8:6]; // divide by 64 to get which sequence sprite we are on (each sprite has a height of 64 so this will tell us sprite order)
-            sprite_idx = reel1_sequence[seq_pos]; // but sprite order is not the same for each reel, so map sprite index to actual reel's sprite
-            x_in_sprite = hcount - REEL1_START_H; // find horizontal offset, simple
-            y_in_sprite = y_in_reel[5:0]; // % 64 to find y location offset
+            seq_pos = y_in_reel[8:6]; // divide by 64
+            sprite_idx = reel1_sequence[seq_pos];
+            x_in_sprite = (hcount - REEL1_START_H) & 6'h3F;
+            y_in_sprite = y_in_reel[5:0]; // % 64
         end else if (inside_reel2_prev) begin
             y_in_reel = (vcount - REELS_START_V + reel2_offset) % TOTAL_HEIGHT;
             seq_pos = y_in_reel[8:6];
             sprite_idx = reel2_sequence[seq_pos];
-            x_in_sprite = hcount - REEL2_START_H;
+            x_in_sprite = (hcount - REEL2_START_H) & 6'h3F;
             y_in_sprite = y_in_reel[5:0];
         end else if (inside_reel3_prev) begin
             y_in_reel = (vcount - REELS_START_V + reel3_offset) % TOTAL_HEIGHT;
             seq_pos = y_in_reel[8:6];
             sprite_idx = reel3_sequence[seq_pos];
-            x_in_sprite = hcount - REEL3_START_H;
+            x_in_sprite = (hcount - REEL3_START_H) & 6'h3F;
             y_in_sprite = y_in_reel[5:0];
         end
     end
@@ -436,6 +434,7 @@ module memory_controller ( // TODO: need to define bus lengths
     logic [2:0] sprite_idx_r;
     logic [5:0] x_in_sprite_r, y_in_sprite_r;
     logic inside_reel_r;
+	logic active_video_d1;
     
     // want to clock inputs into rom so we stabalize them at the same/consistent value, otherwie it is pure combinational changing at diff times
     always_ff @(posedge clk, negedge reset_n) begin
@@ -444,17 +443,17 @@ module memory_controller ( // TODO: need to define bus lengths
             x_in_sprite_r  <= 6'd0;
             y_in_sprite_r  <= 6'd0;
             inside_reel_r <= 1'b0;
-            active_video_d1 <= 1'b0;
+			active_video_d1 <= 1'b0;
         end else begin
             sprite_idx_r <= sprite_idx;
             x_in_sprite_r  <= x_in_sprite;
             y_in_sprite_r  <= y_in_sprite;
             inside_reel_r <= inside_reel_comb;
-            active_video_d1 <= active_video;
+			active_video_d1 <= active_video;
         end
     end
 
-    assign address = ((sprite_idx * SPRITE_HEIGHT * SPRITE_WIDTH) + (SPRITE_HEIGHT * y_in_sprite) + x_in_sprite); // cinvert to bytes?
+    // assign address = ((sprite_idx * SPRITE_HEIGHT * SPRITE_WIDTH) + (SPRITE_HEIGHT * y_in_sprite) + x_in_sprite); // cinvert to bytes?
 
     logic [2:0] rgb_rom;
     // INSTANTIATE ROM HERE, AND AS AN OUTPUT TAKE rgb_rom; - use address
@@ -469,15 +468,16 @@ module memory_controller ( // TODO: need to define bus lengths
     // pipeline to wait for one cycle latenxy in rom read for the data
     logic [2:0] rom_data_reg;
     logic in_reel_r2, in_reel_r3;
-    logic active_video_d3;
+    logic active_video_d2, active_video_d3;
     always_ff @(posedge clk, negedge reset_n) begin
         if (!reset_n) begin
-            rom_data_reg <= 3'b000;
-            inside_reel_r2 <= 1'b0;
+            rom_data_reg <= 3'b000; 
+            in_reel_r2 <= 1'b0;
             active_video_d2 <= 1'b0;
+			active_video_d3 <= 1'b0;
         end else begin
             // this when we do first mem read to get the data
-            inside_reel_r2 <= inside_reel_r; 
+            in_reel_r2 <= inside_reel_r; 
             active_video_d2 <= active_video_d1; // store active vudeo signal too
 
             // this is when we get the pixel in the data which is also clocked for stability 
@@ -488,14 +488,14 @@ module memory_controller ( // TODO: need to define bus lengths
         end
     end
 
-    logic [2:0] rgb_rom;
+    // logic [2:0] rgb_rom;
     always_ff @(posedge clk, negedge reset_n) begin
         if (!reset_n) begin
             pixel_rgb <= 3'b000; // black background color
-        end else if (active_video_d3 && inside_reel_r3) begin 
-            pixel_rgb <= rom_data_reg; // rbg from ROM
-        end else if (active_video_d3) begin
-            pixel_rgb <= 3'b010; // background color
+        end else if (active_video_d2 && in_reel_r2) begin 
+			pixel_rgb <= rom_data_reg; // & 3'b101; // rbg from ROM
+        end else if (active_video_d2) begin
+            pixel_rgb <= 3'b110; // background color
         end else begin
             pixel_rgb <= 3'b000; // black background color
         end
@@ -528,3 +528,5 @@ endmodule
 
 // or rather, once offset >= 64, then we jump the offset by REEL1_STRIDE
 // hm actally not with offset but rather we should store starting mem addresses and add offst to this, so we won't change offset logic
+
+

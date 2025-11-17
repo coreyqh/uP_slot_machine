@@ -11,14 +11,21 @@ module rom_wrapper (
     localparam TOTAL_WORDS = 7 * 4 * 256; // 7168 words total
     localparam ADDRESS_WIDTH = 13;        // 13 bits for 7168 words
     
+	/*
+	(* ram_style = "block" *) 
+    logic [DATA_WIDTH-1:0] single_bram2 [0:256-1]; 
+	
+	
     // forcing to use bram
     (* ram_style = "block" *) 
     logic [DATA_WIDTH-1:0] single_bram [0:TOTAL_WORDS-1]; 
 
     // NOTE: need a file with "all_sprites_combined.mem" (7168 lines) --> should have all the sprites in 1 hopefully it uses 28 bram blcocks
     initial begin
-        $readmemh("sprite_rom0.mem", single_bram);
+        $readmemh("sprite_combined_7_sprites.mem", single_bram); 
+		$readmemh("sprite_rom0.mem", single_bram2);
     end
+	*/
 
     // calculate the index offsets
     logic [11:0] pixel_index; // which pixel we want for a sprite       
@@ -30,43 +37,81 @@ module rom_wrapper (
 
 
     assign pixel_index       = (y_in_sprite * SPRITE_WIDTH) + x_in_sprite; // calcualte offset into the storage for one sprite
-    assign word_offset       = pixel_index >> 2; // divide by 4 to get which line we are in
-    assign pixel_in_word     = pixel_index[1:0]; // %4 in order to get the pixel we want in the word
+    // assign word_offset       = pixel_index >> 2; // divide by 4 to get which line we are in
+	assign word_offset       = pixel_index[11:2];
+    assign pixel_in_word     = x_in_sprite[1:0]; // %4 in order to get the pixel we want in the word
 
     // address calc
     assign sprite_bram_index = (sprite_idx << 2) | (word_offset[9:8]); // take the sprite index * 4 (since 4 blocks per sprite) + (word % 4_rom_blocks) so we get which block to go into
     assign bram_addr         = word_offset[7:0];   
-    assign linear_addr       = (sprite_bram_index << 8) | bram_addr; // form 16 bit address
+    // assign linear_addr       = (sprite_bram_index << 8) | bram_addr; // form 16 bit address
+	assign linear_addr = (sprite_idx << 10) | word_offset;
 
 
     // register for storing pipelined stages
-    logic [DATA_WIDTH-1:0] read_word; 
-    logic [2:0] r_pixel_in_word;
-
+    logic [DATA_WIDTH-1:0] read_word, read_word2, read_word3; 
+    logic [1:0] r_pixel_in_word; 
+	
+	rom_block rom_block (
+        .rd_clk_i           (clk),
+		.rd_en_i			(1'b1),
+		.rd_clk_en_i		(1'b1),
+		.rd_addr_i			(linear_addr),
+        .rd_data_o     (read_word)
+    );
+	
+	
+	/*
+	rom_block  #(
+		.text_file("sprite_rom0.mem")
+    ) rom_block (
+        .clk           (clk),
+        .address		(linear_addr),
+        .rgb     (read_word)
+    );
+	
+	rom_block   #(
+		.text_file("sprite_rom1.mem")
+    ) rom_block2 (
+        .clk           (clk),
+        .address		(linear_addr),
+        .rgb     (read_word2)
+    );
+	
+	rom_block  #(
+		.text_file("sprite_rom2.mem")
+    ) rom_block3 (
+        .clk           (clk),
+        .address		(linear_addr),
+        .rgb     (read_word3)
+    );
+	*/
     
     // syncing
     always_ff @(posedge clk) begin
         
         // stage 1 - use stable inputs for rom block --> want to make it stabel for a clk
-        read_word      <= single_bram[linear_addr]; 
-        r_pixel_in_word  <= pixel_in_word;
+        //read_word      <= single_bram[linear_addr]; 
+		//read_word2 <= single_bram2[linear_addr];
+        r_pixel_in_word  <= pixel_in_word; 
 
         // stage 2 - 
         // moved this in here to make sure we also have to time to safely get a sifnal on the output
         // this will help avoud any hold time conflicts of data changing too fast before the captyre flop in the mem contrller
-        always_comb begin
-            // based on which pixel we want, choose the bits
-            // but we still only want 3 bits even tho we are storing it as 4 --> doing this for smoother calculations
-            case (r_pixel_in_word)
-                2'd0: pixel_rgb = read_word[3:1];
-                2'd1: pixel_rgb = read_word[7:5];
-                2'd2: pixel_rgb = read_word[11:9];
-                2'd3: pixel_rgb = read_word[15:13]; 
-                default: pixel_rgb = 4'b000;
-            endcase
-        end
+		// based on which pixel we want, choose the bits
+		// but we still only want 3 bits even tho we are storing it as 4 --> doing this for smoother calculations
 
     end
+	
+	always_comb begin
+		case (r_pixel_in_word)
+			2'd0: pixel_rgb = read_word[3:1]; //& read_word2[3:1] & read_word3[3:1];
+			2'd1: pixel_rgb = read_word[7:5];
+			2'd2: pixel_rgb = read_word[11:9];
+			2'd3: pixel_rgb = read_word[15:13]; 
+			default: pixel_rgb = 4'b000; 
+		endcase
+	end
 
 
 endmodule
@@ -356,3 +401,5 @@ endmodule
 // //     end
 
 // // endmodule
+
+

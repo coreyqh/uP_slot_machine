@@ -31,7 +31,8 @@ module memory_controller ( // TODO: need to define bus lengths
 
     localparam PIXEL_SCALE = 1;
 
-    localparam TOTAL_HEIGHT = NUM_SPRITES * SPRITE_HEIGHT * PIXEL_SCALE;
+    localparam TOTAL_HEIGHT = NUM_SPRITES * SPRITE_HEIGHT * 2 * PIXEL_SCALE;
+	localparam TOTAL_SPIN_HEIGHT = NUM_SPRITES * SPRITE_HEIGHT * PIXEL_SCALE;
 
     localparam REEL1_START_H = 190; // TODO : calculate if these are ok values?
     localparam REEL2_START_H = 398;
@@ -39,29 +40,29 @@ module memory_controller ( // TODO: need to define bus lengths
     localparam REELS_START_V = 50;
     localparam REEL_DISPLAY_HEIGHT = 430;  // Show 384 pixels tall (3 full sprites!) // could be 3
     localparam REELS_END_V = REELS_START_V + REEL_DISPLAY_HEIGHT - 1;  // 423
-    // Screen layout for 1024×600
+    // Screen layout for 1024—600
     // localparam SCREEN_WIDTH = 1024;
     // localparam SCREEN_HEIGHT = 600;
     
     // // Center reels horizontally: (1024 - 3*64) / 4 = spacing
-    // localparam REEL1_START_H = 244;  // (1024 - 3*64)/4 ≈ 244
+    // localparam REEL1_START_H = 244;  // (1024 - 3*64)/4 â‰ˆ 244
     // localparam REEL2_START_H = 480;  // 244 + 64 + gap
     // localparam REEL3_START_H = 716;  // 480 + 64 + gap
     
     // // Vertical: show more sprites with more height!
     // localparam REELS_START_V = 100;
-    // localparam REEL_DISPLAY_HEIGHT = 400;  // Show ~6 sprites (400/64 ≈ 6.25)
+    // localparam REEL_DISPLAY_HEIGHT = 400;  // Show ~6 sprites (400/64 â‰ˆ 6.25)
     // localparam REELS_END_V = REELS_START_V + REEL_DISPLAY_HEIGHT - 1;  // 499
 
     // localparam REEL1_START_SPRITE = 3'd0;  // Reel 1 starts at sprite 0
     // localparam REEL2_START_SPRITE = 3'd2;  // Reel 2 starts at sprite 2
     // localparam REEL3_START_SPRITE = 3'd5;  // Reel 3 starts at sprite 5
 
-    // localparam REEL1_STRIDE = 3'd1;  // Reel 1: 0→1→2→3→4→5→6→7→0...
-    // localparam REEL2_STRIDE = 3'd3;  // Reel 2: 2→5→0→3→6→1→4→7→2...
-    // localparam REEL3_STRIDE = 3'd6;  // Reel 3: 5→3→1→7→5→3→1→7...
+    // localparam REEL1_STRIDE = 3'd1;  // Reel 1: 0â†’1â†’2â†’3â†’4â†’5â†’6â†’7â†’0...
+    // localparam REEL2_STRIDE = 3'd3;  // Reel 2: 2â†’5â†’0â†’3â†’6â†’1â†’4â†’7â†’2...
+    // localparam REEL3_STRIDE = 3'd6;  // Reel 3: 5â†’3â†’1â†’7â†’5â†’3â†’1â†’7...
 
-    localparam PIXELS_PER_FRAME = 8;
+    localparam PIXELS_PER_FRAME = 12;
     
 
     // Reel sequences (LUTs)
@@ -77,7 +78,7 @@ module memory_controller ( // TODO: need to define bus lengths
         reel1_sequence[3] = 3'd3;
         reel1_sequence[4] = 3'd4; 
         reel1_sequence[5] = 3'd5;
-        reel1_sequence[6] = 3'd6; 
+        reel1_sequence[6] = 3'd6;  
         
         // Reel 2: shuffled
         reel2_sequence[0] = 3'd2; 
@@ -186,8 +187,8 @@ module memory_controller ( // TODO: need to define bus lengths
             reel2_offset <= 0;
             reel3_offset <= 0;
             reel1_spin_amt <= 3'd5; // if this spins 5 times, then we can assume the reels below also spin 5 times, we what we want is just the extra spins for the other two
-            reel2_spin_amt <= 3'd2;
-            reel3_spin_amt <= 3'd2;
+            reel2_spin_amt <= 3'd1;
+            reel3_spin_amt <= 3'd1;
             reel1_final_sprite <= 0;
             reel2_final_sprite <= 0;
             reel3_final_sprite <= 0;
@@ -392,7 +393,7 @@ module memory_controller ( // TODO: need to define bus lengths
     logic [2:0] sprite_idx;
     logic [5:0] x_in_sprite, y_in_sprite;
     logic [9:0] y_in_reel;
-    logic [2:0] seq_position;
+    logic [2:0] seq_pos;
     logic inside_reel, inside_reel_comb;
     //logic [$clog2(NUM_SPRITES*SPRITE_WIDTH*SPRITE_HEIGHT)-1:0] address; // each address here will hodl an rgb value
     
@@ -403,8 +404,8 @@ module memory_controller ( // TODO: need to define bus lengths
     assign inside_reel_comb = inside_reel1_prev | inside_reel2_prev | inside_reel3_prev;
 
     always_comb begin
-        logic [9:0] y_in_reel;
-        logic [2:0] seq_pos;
+        //logic [9:0] y_in_reel;
+        //logic [2:0] seq_pos;
         
         sprite_idx = 3'd0;
         x_in_sprite = 6'd0;
@@ -412,22 +413,22 @@ module memory_controller ( // TODO: need to define bus lengths
         
         if (inside_reel1_prev) begin
             y_in_reel = (vcount - REELS_START_V + reel1_offset) % TOTAL_HEIGHT;
-            seq_pos = y_in_reel[8:6]; // divide by 64
+            seq_pos = y_in_reel[9:7]; // divide by 64 since each px has height 64 so this will tell us which pixel in a regular 0-6 sequence we are in
             sprite_idx = reel1_sequence[seq_pos];
-            x_in_sprite = (hcount - REEL1_START_H) & 6'h3F;
-            y_in_sprite = y_in_reel[5:0]; // % 64
+            x_in_sprite = ((hcount - REEL1_START_H) >> 1); //& 6'h3F; - divide by 2 since (so want to go twice as slow almost to double up) (scaling to 128x128)
+            y_in_sprite = y_in_reel[6:1]; // divide by 2 and  % 64 - (scaling to 128x128)
         end else if (inside_reel2_prev) begin
             y_in_reel = (vcount - REELS_START_V + reel2_offset) % TOTAL_HEIGHT;
-            seq_pos = y_in_reel[8:6];
+            seq_pos = y_in_reel[9:7];
             sprite_idx = reel2_sequence[seq_pos];
-            x_in_sprite = (hcount - REEL2_START_H) & 6'h3F;
-            y_in_sprite = y_in_reel[5:0];
+            x_in_sprite = ((hcount - REEL2_START_H) >> 1); // & 6'h3F;
+            y_in_sprite = y_in_reel[6:1]; // divide by 2 and %64
         end else if (inside_reel3_prev) begin
             y_in_reel = (vcount - REELS_START_V + reel3_offset) % TOTAL_HEIGHT;
-            seq_pos = y_in_reel[8:6];
+            seq_pos = y_in_reel[9:7];
             sprite_idx = reel3_sequence[seq_pos];
-            x_in_sprite = (hcount - REEL3_START_H) & 6'h3F;
-            y_in_sprite = y_in_reel[5:0];
+            x_in_sprite = ((hcount - REEL3_START_H)) >> 1; //) & 6'h3F;
+            y_in_sprite = y_in_reel[6:1]; // divide by 2 and %64
         end
     end
 
@@ -459,6 +460,7 @@ module memory_controller ( // TODO: need to define bus lengths
     // INSTANTIATE ROM HERE, AND AS AN OUTPUT TAKE rgb_rom; - use address
     rom_wrapper rom_wrapper (
         .clk           (clk),
+		.reset			(reset_n),
         .sprite_idx    (sprite_idx_r),
         .x_in_sprite   (x_in_sprite_r),
         .y_in_sprite   (y_in_sprite_r),

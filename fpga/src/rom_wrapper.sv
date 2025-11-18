@@ -1,5 +1,6 @@
 module rom_wrapper (
     input  logic clk,
+	input logic reset,
     input  logic [2:0] sprite_idx,       
     input  logic [5:0] x_in_sprite,      
     input  logic [5:0] y_in_sprite,      
@@ -36,16 +37,16 @@ module rom_wrapper (
     logic [ADDRESS_WIDTH-1:0] linear_addr;
 
 
-    assign pixel_index       = (y_in_sprite * SPRITE_WIDTH) + x_in_sprite; // calcualte offset into the storage for one sprite
+    assign pixel_index       = (y_in_sprite * 64) + x_in_sprite; // calcualte offset into the storage for one sprite
     // assign word_offset       = pixel_index >> 2; // divide by 4 to get which line we are in
-	assign word_offset       = pixel_index[11:2];
+	assign word_offset       = pixel_index[11:2]; // divide by 4 to get which word
     assign pixel_in_word     = x_in_sprite[1:0]; // %4 in order to get the pixel we want in the word
 
     // address calc
     assign sprite_bram_index = (sprite_idx << 2) | (word_offset[9:8]); // take the sprite index * 4 (since 4 blocks per sprite) + (word % 4_rom_blocks) so we get which block to go into
     assign bram_addr         = word_offset[7:0];   
     // assign linear_addr       = (sprite_bram_index << 8) | bram_addr; // form 16 bit address
-	assign linear_addr = (sprite_idx << 10) | word_offset;
+	assign linear_addr = (sprite_idx << 10) | word_offset; // 13'd6142; //(sprite_idx << 10) | word_offset; // --. wrong: 13'd2176; shld be all green
 
 
     // register for storing pipelined stages
@@ -54,6 +55,7 @@ module rom_wrapper (
 	
 	rom_block rom_block (
         .rd_clk_i           (clk),
+		.rst_i				(),
 		.rd_en_i			(1'b1),
 		.rd_clk_en_i		(1'b1),
 		.rd_addr_i			(linear_addr),
@@ -105,11 +107,11 @@ module rom_wrapper (
 	
 	always_comb begin
 		case (r_pixel_in_word)
-			2'd0: pixel_rgb = read_word[3:1]; //& read_word2[3:1] & read_word3[3:1];
-			2'd1: pixel_rgb = read_word[7:5];
-			2'd2: pixel_rgb = read_word[11:9];
-			2'd3: pixel_rgb = read_word[15:13]; 
-			default: pixel_rgb = 4'b000; 
+			2'd0: pixel_rgb = read_word[15:13]; //& read_word2[3:1] & read_word3[3:1];
+			2'd1: pixel_rgb = read_word[11:9];
+			2'd2: pixel_rgb = read_word[7:5];
+			2'd3: pixel_rgb = read_word[3:1]; 
+			default: pixel_rgb = 3'b000; 
 		endcase
 	end
 
@@ -311,8 +313,8 @@ endmodule
 // //     localparam SPRITE_WIDTH = 64;
 // //     localparam SPRITE_HEIGHT = 64;
 
-// //     // 28 BRAMs total (4 per sprite × 7 sprites)
-// //     // Each word stores 5 pixels (5 × 3 = 15 bits, 1 bit unused)
+// //     // 28 BRAMs total (4 per sprite Ã— 7 sprites)
+// //     // Each word stores 5 pixels (5 Ã— 3 = 15 bits, 1 bit unused)
 // //     logic [15:0] bram [0:27][0:255]; // 256x16 BRAMS -- 256 lines, 16bit words
     
 // //     // Load sprite data
@@ -358,7 +360,7 @@ endmodule
 // //     // so when are doing calcualtions we want to treat it as pixels and not bits - hence we abstract away each bit (treat as 5 insted of 5*3=15 for example)
 // //     logic [11:0] pixel_index;
 // //     assign pixel_index = (y_in_sprite * SPRITE_WIDTH) + x_in_sprite;
-// //     // Example: y=2, x=25 → pixel_index = 2*64 + 25 = 153
+// //     // Example: y=2, x=25 â†’ pixel_index = 2*64 + 25 = 153
     
 // //     // Divide by 5 to get word offset within sprite -- which word line??
 // //     logic [11:0] word_offset;

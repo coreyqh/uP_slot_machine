@@ -23,3 +23,22 @@ module rom_block2 #(
     //     dout <= single_bram1[address]; 
     // end
 endmodule
+
+
+module rom_block3 #(
+    parameter string text_file,
+    parameter int UNIQUE_ID = 0  // Forces separate synthesis for each instance
+) (
+    input  logic clk,
+    input  logic [7:0] address,
+    output logic [15:0] dout
+);
+	logic [15:0] dout1;
+    
+    rom_block2 #(.text_file(text_file)) 
+        r21_inst (.clk(clk), .address(address), .dout(dout1)); 
+    
+    always_ff @(posedge clk) begin 
+         dout <= dout1; 
+    end
+endmodule

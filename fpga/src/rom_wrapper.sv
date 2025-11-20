@@ -31,6 +31,7 @@ module rom_wrapper (
     (* keep = "true" *) logic [15:0] r1_data, r2_data, r3_data, r4_data; // Bank A
     (* keep = "true" *) logic [15:0] r5_data, r6_data, r7_data, r8_data; // Bank B
 	(* keep = "true" *) logic [15:0] r9_data, r10_data, r11_data, r12_data; // Bank B
+	// (* keep = "true" *) logic [15:0] r13_data, r14_data, r15_data, r16_data; // Bank B
 
     // --- BRAM Output Wires (28 Total - Logical Outputs for Sprites) ---
     // NOTE: These wires are now essentially redundant, as they all point to the same 8 data lines.
@@ -85,11 +86,17 @@ module rom_wrapper (
     r7 r7_ip ( .rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r7_data) );
     r8 r8_ip ( .rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r8_data) );
 	
-	// Bank B (Odd Sprites)
+	// Bank C
     r9 r9_ip ( .rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r9_data) );
     r10 r10_ip ( .rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r10_data) );
     r11 r11_ip ( .rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r11_data) );
     r12 r12_ip ( .rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r12_data) );
+	
+	// Bank C
+    r13 r13_ip ( .rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r13_data) );
+    r14 r14_ip ( .rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r14_data) );
+    r15 r15_ip ( .rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r15_data) );
+    r16 r16_ip ( .rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r16_data) );
 
 
     // --- Data Selection (Combinational Mux) ---
@@ -100,12 +107,19 @@ module rom_wrapper (
             // All even sprites rely on r1-r4 outputs
             3'd0: begin
                 unique case (bram_select) 
+                    2'd0: selected_word = r13_data; 2'd1: selected_word = r14_data; 
+                    2'd2: selected_word = r15_data; 2'd3: selected_word = r16_data; 
+                    default: selected_word = 16'h0000; 
+                endcase
+            end
+			3'd1: begin
+                unique case (bram_select) 
                     2'd0: selected_word = r9_data; 2'd1: selected_word = r10_data; 
                     2'd2: selected_word = r11_data; 2'd3: selected_word = r12_data; 
                     default: selected_word = 16'h0000; 
                 endcase
             end
-			3'd1, 3'd2, 3'd3: begin
+			3'd2: begin
                 unique case (bram_select) 
                     2'd0: selected_word = r5_data; 2'd1: selected_word = r6_data; 
                     2'd2: selected_word = r7_data; 2'd3: selected_word = r8_data; 
@@ -113,7 +127,7 @@ module rom_wrapper (
                 endcase
             end
             // All odd sprites rely on r5-r8 outputs
-            3'd4, 3'd5, 3'd6: begin
+            3'd3, 3'd4, 3'd5, 3'd6: begin
                 unique case (bram_select) 
                     2'd0: selected_word = r1_data; 2'd1: selected_word = r2_data; 
                     2'd2: selected_word = r3_data; 2'd3: selected_word = r4_data; 

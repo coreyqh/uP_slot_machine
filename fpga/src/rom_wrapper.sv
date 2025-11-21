@@ -79,6 +79,21 @@ module rom_wrapper (
     r15 r15_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r15_data));
     r16 r16_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r16_data));
 
+    // r17 r17_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r17_data));
+    // r18 r18_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r18_data));
+    // r19 r19_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r19_data));
+    // r20 r20_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r20_data));
+
+    // r21 r21_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r21_data));
+    // r22 r22_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r22_data));
+    // r23 r23_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r23_data));
+    // r24 r24_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r24_data));
+
+    // r25 r25_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r25_data));
+    // r26 r26_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r26_data));
+    // r27 r27_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r27_data));
+    // r28 r28_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r28_data));
+
     // Combinational sprites (4-6) - KEEP AS COMBINATIONAL, DON'T REGISTER OUTPUT
     rom_block2 #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom20.mem")) 
         r17_inst (.clk(clk), .address(bram_addr), .dout(r17_data));

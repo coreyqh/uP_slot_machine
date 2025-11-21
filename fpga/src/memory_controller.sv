@@ -368,7 +368,7 @@ module memory_controller (
     // --- Pipeline Stage 0 (Clock Edge N+1) ---
     // Registers inputs to the ROM (Address Path: 1 Cycle)
     logic [9:0] word_addr_r;
-    logic [2:0] sprite_idx_r;
+    logic [2:0] sprite_idx_r, sprite_idx_r2, sprite_idx_r3, sprite_idx_r4;
     logic [1:0] pixel_in_word_r;
 
     // Control signal pipeline (Delayed by 1 cycle)
@@ -399,12 +399,11 @@ module memory_controller (
         .data_o(rom_data)            // Data available at N+1
     );
 
-    // --- Pipeline Stage 1 (Clock Edge N+2) ---
-    // Register ROM output and delay control signals (Total Data Path: 2 Cycles)
+    // register ROM output and delay control signals (Total Data Path: 2 Cycles)
     logic [15:0] rom_data_r, rom_data_r2, rom_data_r3;
     logic [1:0] pixel_in_word_r2, pixel_in_word_r3, pixel_in_word_r4; // Final pixel selector (2-cycle delay)
 
-    // Control signal pipeline (Delayed by 2 cycles, this is your working 'r2' path)
+    // control signal pipeline
     logic inside_reel_r2, inside_reel_r3, inside_reel_r4;
     logic active_video_d2, active_video_d3, active_video_d4;
 
@@ -420,23 +419,68 @@ module memory_controller (
             pixel_in_word_r2 <= pixel_in_word_r;
             inside_reel_r2   <= inside_reel_r;
             active_video_d2  <= active_video_d1;
+			sprite_idx_r2	<= sprite_idx_r;
 			
 			pixel_in_word_r3 <= pixel_in_word_r2;
 			rom_data_r2 <= rom_data_r;
 			active_video_d3 <= active_video_d2;
 			inside_reel_r3 <= inside_reel_r2;
+			sprite_idx_r3	<= sprite_idx_r2;
 			
 			pixel_in_word_r4 <= pixel_in_word_r3;
 			rom_data_r3 <= rom_data_r2;
 			active_video_d4 <= active_video_d3;
 			inside_reel_r4 <= inside_reel_r3;
+			sprite_idx_r4	<= sprite_idx_r3;
         end
     end
 
-    // --- Final Pixel Extraction (Combinational, using 2-cycle delayed signals) ---
-    // This uses the 2-cycle delayed signals and the CORRECT bit slicing.
-    logic [2:0] sprite_pixel_color;
+    // final pixel extraction
+    // final pixel extraction
+	logic [2:0] sprite_pixel_color;
+
+	always_comb begin
+		case (sprite_idx_r4)
+			3'd0, 3'd1, 3'd2, 3'd3: begin
+				// EBR sprites: use rom_data_r2 (3 total pipeline stages match)
+				case (pixel_in_word_r3) 
+					2'd0: sprite_pixel_color = rom_data_r[15:13]; 
+					2'd1: sprite_pixel_color = rom_data_r[11:9];
+					2'd2: sprite_pixel_color = rom_data_r[7:5];
+					2'd3: sprite_pixel_color = rom_data_r[3:1];
+					default: sprite_pixel_color = 3'b000; 
+				endcase
+			end
+			3'd4, 3'd5, 3'd6: begin
+				// Combinational sprites: use rom_data_r3 (need extra delay)
+				case (pixel_in_word_r3) 
+					2'd0: sprite_pixel_color = rom_data[15:13]; 
+					2'd1: sprite_pixel_color = rom_data[11:9];
+					2'd2: sprite_pixel_color = rom_data[7:5];
+					2'd3: sprite_pixel_color = rom_data[3:1];
+					default: sprite_pixel_color = 3'b000; 
+				endcase
+			end
+			default: sprite_pixel_color = 3'b110;
+		endcase
+	end
+
+
 	
+	
+	/*
+	always_comb begin
+		unique case (pixel_in_word_r3) 
+			2'd0: sprite_pixel_color = rom_data[15:13]; 
+			2'd1: sprite_pixel_color = rom_data[11:9];
+			2'd2: sprite_pixel_color = rom_data[7:5];
+			2'd3: sprite_pixel_color = rom_data[3:1];
+			default: sprite_pixel_color = 3'b000; 
+		endcase
+	end
+	*/
+	
+	/* --. works ish
 	always_comb begin
 		unique case (pixel_in_word_r3) 
 			2'd0: sprite_pixel_color = rom_data_r2[15:13]; 
@@ -446,8 +490,9 @@ module memory_controller (
 			default: sprite_pixel_color = 3'b000; 
 		endcase
 	end
+	*/
 
-	// --- Output (use r3 signals) ---
+	// output
 	always_comb begin 
 		if (active_video_d3) begin 
 			if (inside_reel_r3) begin  
@@ -459,99 +504,5 @@ module memory_controller (
 			pixel_rgb = 3'b000;
 		end
 	end 
-
-	
-	/*
-
-    // ============================================================
-    // PIPELINE STAGE 1: Register inputs to ROM
-    // ============================================================
-    logic [2:0] sprite_idx_r;
-    logic [5:0] x_in_sprite_r, y_in_sprite_r;
-    logic inside_reel_r;
-    logic active_video_d1;
-    
-    always_ff @(posedge clk, negedge reset_n) begin
-        if (!reset_n) begin
-            sprite_idx_r <= 3'd0;
-            x_in_sprite_r <= 6'd0;
-            y_in_sprite_r <= 6'd0;
-            inside_reel_r <= 1'b0;
-            active_video_d1 <= 1'b0;
-        end else begin
-            sprite_idx_r <= sprite_idx;
-            x_in_sprite_r <= x_in_sprite;
-            y_in_sprite_r <= y_in_sprite;
-            inside_reel_r <= inside_reel_comb;
-            active_video_d1 <= active_video;
-        end
-    end
-
-    // ============================================================
-    // ROM instantiation
-    // Internal pipeline: Stage 2 (ROM reads) + Stage 3 (read_word_reg)
-    // Output rgb_rom available at Stage 3
-    // ============================================================
-    logic [2:0] rgb_rom;
-    
-    rom_wrapper rom_wrapper (
-        .clk(clk),
-        .reset(reset_n),
-        .sprite_idx(sprite_idx_r),
-        .x_in_sprite(x_in_sprite_r),
-        .y_in_sprite(y_in_sprite_r),
-        .pixel_rgb(rgb_rom)  // Available 2 cycles after inputs (Stage 3 total)
-    );
-    
-    // ============================================================
-    // PIPELINE STAGE 2: Delay control signals to match ROM internal stage 2
-    // ============================================================
-    logic inside_reel_r2;
-    logic active_video_d2;
-    
-    always_ff @(posedge clk, negedge reset_n) begin
-        if (!reset_n) begin
-            inside_reel_r2 <= 1'b0;
-            active_video_d2 <= 1'b0;
-        end else begin
-            inside_reel_r2 <= inside_reel_r;
-            active_video_d2 <= active_video_d1;
-        end
-    end
-    
-    // ============================================================
-    // PIPELINE STAGE 3: Register ROM output and delay control signals again
-    // ============================================================
-    logic [2:0] rom_data_reg;
-    logic inside_reel_r3;
-    logic active_video_d3;
-    
-    always_ff @(posedge clk, negedge reset_n) begin
-        if (!reset_n) begin
-            rom_data_reg <= 3'b000; 
-            inside_reel_r3 <= 1'b0;
-            active_video_d3 <= 1'b0;
-        end else begin
-            rom_data_reg <= rgb_rom;           // Capture rom_wrapper output (available at Stage 3)
-            inside_reel_r3 <= inside_reel_r2;  // Delay by 1 more cycle
-            active_video_d3 <= active_video_d2; // Delay by 1 more cycle
-        end
-    end
-
-    // ============================================================
-    // FINAL OUTPUT: Use Stage 3 signals
-    // ============================================================
-    always_ff @(posedge clk, negedge reset_n) begin
-        if (!reset_n) begin
-            pixel_rgb <= 3'b000;
-        end else if (active_video_d3 && inside_reel_r3) begin 
-            pixel_rgb <= rom_data_reg;  // RGB from ROM (Stage 3 data)
-        end else if (active_video_d3) begin
-            pixel_rgb <= 3'b110;  // Background color (yellow)
-        end else begin
-            pixel_rgb <= 3'b000;  // Black during blanking
-        end
-    end
-	*/
 
 endmodule

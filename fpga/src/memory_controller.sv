@@ -443,7 +443,7 @@ module memory_controller (
 		case (sprite_idx_r4)
 			3'd0, 3'd1, 3'd2, 3'd3: begin
 				// EBR sprites: use rom_data_r2 (3 total pipeline stages match)
-				case (pixel_in_word_r3) 
+				case (pixel_in_word_r4) 
 					2'd0: sprite_pixel_color = rom_data_r[15:13]; 
 					2'd1: sprite_pixel_color = rom_data_r[11:9];
 					2'd2: sprite_pixel_color = rom_data_r[7:5];
@@ -453,11 +453,11 @@ module memory_controller (
 			end
 			3'd4, 3'd5, 3'd6: begin
 				// Combinational sprites: use rom_data_r3 (need extra delay)
-				case (pixel_in_word_r3) 
-					2'd0: sprite_pixel_color = rom_data[15:13]; 
-					2'd1: sprite_pixel_color = rom_data[11:9];
-					2'd2: sprite_pixel_color = rom_data[7:5];
-					2'd3: sprite_pixel_color = rom_data[3:1];
+				case (pixel_in_word_r4) 
+					2'd0: sprite_pixel_color = rom_data_r[15:13]; 
+					2'd1: sprite_pixel_color = rom_data_r[11:9];
+					2'd2: sprite_pixel_color = rom_data_r[7:5];
+					2'd3: sprite_pixel_color = rom_data_r[3:1];
 					default: sprite_pixel_color = 3'b000; 
 				endcase
 			end

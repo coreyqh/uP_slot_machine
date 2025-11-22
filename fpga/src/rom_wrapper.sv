@@ -212,44 +212,58 @@ module rom_wrapper (
     // Second level: Register sprite outputs to break timing path
     logic [15:0] sprite0_data_r, sprite1_data_r, sprite2_data_r, sprite3_data_r;
     logic [15:0] sprite4_data_r, sprite5_data_r, sprite6_data_r;
+	logic [15:0] sprite4_data_stage1, sprite5_data_stage1, sprite6_data_stage1;
     logic [2:0] sprite_sel_r;
+	
+	 always_ff @(posedge clk) begin
+        sprite4_data_stage1 <= sprite4_data;
+        sprite5_data_stage1 <= sprite5_data;
+        sprite6_data_stage1 <= sprite6_data;
+	end
     
     always_ff @(posedge clk) begin
-        sprite4_data_r <= sprite4_data;
-        sprite5_data_r <= sprite5_data;
-        sprite6_data_r <= sprite6_data;
+        sprite0_data_r <= sprite0_data;
+        sprite1_data_r <= sprite1_data;
+        sprite2_data_r <= sprite2_data;
+        sprite3_data_r <= sprite3_data;
+        sprite4_data_r <= sprite4_data_stage1;
+        sprite5_data_r <= sprite5_data_stage1;
+        sprite6_data_r <= sprite6_data_stage1;
         sprite_sel_r <= sprite_sel_i;
     end
     
     // Third level: Final sprite selection (small 7:1 mux)
+	/*
     logic [15:0] final_data;
 	 always_ff @(posedge clk) begin
         case (sprite_sel_r)
-            3'd0: data_o <= sprite0_data;
-            3'd1: data_o <= sprite1_data;
-            3'd2: data_o <= sprite2_data;
-            3'd3: data_o <= sprite3_data;
+            3'd0: data_o <= sprite0_data_r;
+            3'd1: data_o <= sprite1_data_r;
+            3'd2: data_o <= sprite2_data_r;
+            3'd3: data_o <= sprite3_data_r;
             3'd4: data_o <= sprite4_data_r;
             3'd5: data_o <= sprite5_data_r;
             3'd6: data_o <= sprite6_data_r;
             default: data_o <= 16'h0000;
         endcase
     end
+	*/
 	
-	/*
+	
     always_comb begin
         case (sprite_sel_r)
-            3'd0: final_data = sprite0_data_r;
-            3'd1: final_data = sprite1_data_r;
-            3'd2: final_data = sprite2_data_r;
-            3'd3: final_data = sprite3_data_r;
-            3'd4: final_data = sprite4_data_r;
-            3'd5: final_data = sprite5_data_r;
-            3'd6: final_data = sprite6_data_r;
-            default: final_data = 16'h0000;
+            3'd0: data_o = sprite0_data_r;
+            3'd1: data_o = sprite1_data_r;
+            3'd2: data_o = sprite2_data_r;
+            3'd3: data_o = sprite3_data_r;
+            3'd4: data_o = sprite4_data_r;
+            3'd5: data_o = sprite5_data_r;
+            3'd6: data_o = sprite6_data_r;
+            default: data_o = 16'h0000;
         endcase
     end
     
+	/*
     // Final output register
     logic [15:0] data_o_reg;
     always_ff @(posedge clk) begin

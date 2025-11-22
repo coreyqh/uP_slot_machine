@@ -368,7 +368,7 @@ module memory_controller (
     // --- Pipeline Stage 0 (Clock Edge N+1) ---
     // Registers inputs to the ROM (Address Path: 1 Cycle)
     logic [9:0] word_addr_r;
-    logic [2:0] sprite_idx_r, sprite_idx_r2, sprite_idx_r3, sprite_idx_r4;
+    logic [2:0] sprite_idx_r, sprite_idx_r2, sprite_idx_r3, sprite_idx_r4, sprite_idx_r5, sprite_idx_r6;
     logic [1:0] pixel_in_word_r;
 
     // Control signal pipeline (Delayed by 1 cycle)
@@ -401,7 +401,9 @@ module memory_controller (
 
     // register ROM output and delay control signals (Total Data Path: 2 Cycles)
     logic [15:0] rom_data_r, rom_data_r2, rom_data_r3;
-    logic [1:0] pixel_in_word_r2, pixel_in_word_r3, pixel_in_word_r4; // Final pixel selector (2-cycle delay)
+    logic [1:0] pixel_in_word_r2, pixel_in_word_r3, pixel_in_word_r4, pixel_in_word_r5, pixel_in_word_r6; // Final pixel selector (2-cycle delay)
+	logic active_video_d5, inside_reel_r5;
+
 
     // control signal pipeline
     logic inside_reel_r2, inside_reel_r3, inside_reel_r4;
@@ -414,6 +416,14 @@ module memory_controller (
 			
 			rom_data_r2 <= 16'd0; pixel_in_word_r3 <= 2'd0;
 			inside_reel_r3 <= 1'b0; active_video_d3 <= 1'b0;
+			
+			pixel_in_word_r5 <= 0;
+			active_video_d5 <= 0;
+			inside_reel_r5 <= 0;
+			sprite_idx_r5	<= 0;
+			
+			pixel_in_word_r6 <= 0;
+			sprite_idx_r6 <= 0;
         end else begin
             rom_data_r       <= rom_data; // Capture 1-cycle latency data
             pixel_in_word_r2 <= pixel_in_word_r;
@@ -432,6 +442,15 @@ module memory_controller (
 			active_video_d4 <= active_video_d3;
 			inside_reel_r4 <= inside_reel_r3;
 			sprite_idx_r4	<= sprite_idx_r3;
+			
+			pixel_in_word_r5 <= pixel_in_word_r4;
+			active_video_d5 <= active_video_d4;
+			inside_reel_r5 <= inside_reel_r4;
+			sprite_idx_r5	<= sprite_idx_r4;
+			
+			pixel_in_word_r6 <= pixel_in_word_r5;
+			sprite_idx_r6 <= sprite_idx_r5;
+			
         end
     end
 
@@ -440,24 +459,24 @@ module memory_controller (
 	logic [2:0] sprite_pixel_color;
 
 	always_comb begin
-		case (sprite_idx_r4)
+		case (sprite_idx_r6)
 			3'd0, 3'd1, 3'd2, 3'd3: begin
 				// EBR sprites: use rom_data_r2 (3 total pipeline stages match)
-				case (pixel_in_word_r4) 
-					2'd0: sprite_pixel_color = rom_data_r[15:13]; 
-					2'd1: sprite_pixel_color = rom_data_r[11:9];
-					2'd2: sprite_pixel_color = rom_data_r[7:5];
-					2'd3: sprite_pixel_color = rom_data_r[3:1];
+				case (pixel_in_word_r6) 
+					2'd0: sprite_pixel_color = rom_data_r2[15:13]; 
+					2'd1: sprite_pixel_color = rom_data_r2[11:9];
+					2'd2: sprite_pixel_color = rom_data_r2[7:5];
+					2'd3: sprite_pixel_color = rom_data_r2[3:1];
 					default: sprite_pixel_color = 3'b000; 
 				endcase
 			end
 			3'd4, 3'd5, 3'd6: begin
 				// Combinational sprites: use rom_data_r3 (need extra delay)
-				case (pixel_in_word_r4) 
-					2'd0: sprite_pixel_color = rom_data_r[15:13]; 
-					2'd1: sprite_pixel_color = rom_data_r[11:9];
-					2'd2: sprite_pixel_color = rom_data_r[7:5];
-					2'd3: sprite_pixel_color = rom_data_r[3:1];
+				case (pixel_in_word_r6) 
+					2'd0: sprite_pixel_color = rom_data_r3[15:13]; 
+					2'd1: sprite_pixel_color = rom_data_r3[11:9];
+					2'd2: sprite_pixel_color = rom_data_r3[7:5];
+					2'd3: sprite_pixel_color = rom_data_r3[3:1];
 					default: sprite_pixel_color = 3'b000; 
 				endcase
 			end

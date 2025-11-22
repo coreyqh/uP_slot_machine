@@ -179,10 +179,10 @@ module rom_wrapper (
     // Sprite 4
     always_comb begin
         case (1'b1)
-            rom_en_dly[16]: sprite4_data = r17_data;
-            rom_en_dly[17]: sprite4_data = r18_data;
-            rom_en_dly[18]: sprite4_data = r19_data;
-            rom_en_dly[19]: sprite4_data = r20_data;
+            rom_en[16]: sprite4_data = r17_data;
+            rom_en[17]: sprite4_data = r18_data;
+            rom_en[18]: sprite4_data = r19_data;
+            rom_en[19]: sprite4_data = r20_data;
             default: sprite4_data = 16'h0000;
         endcase
     end
@@ -190,10 +190,10 @@ module rom_wrapper (
     // Sprite 5
     always_comb begin
         case (1'b1)
-            rom_en_dly[20]: sprite5_data = r21_data;
-            rom_en_dly[21]: sprite5_data = r22_data;
-            rom_en_dly[22]: sprite5_data = r23_data;
-            rom_en_dly[23]: sprite5_data = r24_data;
+            rom_en[20]: sprite5_data = r21_data;
+            rom_en[21]: sprite5_data = r22_data;
+            rom_en[22]: sprite5_data = r23_data;
+            rom_en[23]: sprite5_data = r24_data;
             default: sprite5_data = 16'h0000;
         endcase
     end
@@ -201,10 +201,10 @@ module rom_wrapper (
     // Sprite 6
     always_comb begin
         case (1'b1)
-            rom_en_dly[24]: sprite6_data = r25_data;
-            rom_en_dly[25]: sprite6_data = r26_data;
-            rom_en_dly[26]: sprite6_data = r27_data;
-            rom_en_dly[27]: sprite6_data = r28_data;
+            rom_en[24]: sprite6_data = r25_data;
+            rom_en[25]: sprite6_data = r26_data;
+            rom_en[26]: sprite6_data = r27_data;
+            rom_en[27]: sprite6_data = r28_data;
             default: sprite6_data = 16'h0000;
         endcase
     end
@@ -215,10 +215,6 @@ module rom_wrapper (
     logic [2:0] sprite_sel_r;
     
     always_ff @(posedge clk) begin
-        sprite0_data_r <= sprite0_data;
-        sprite1_data_r <= sprite1_data;
-        sprite2_data_r <= sprite2_data;
-        sprite3_data_r <= sprite3_data;
         sprite4_data_r <= sprite4_data;
         sprite5_data_r <= sprite5_data;
         sprite6_data_r <= sprite6_data;
@@ -227,6 +223,20 @@ module rom_wrapper (
     
     // Third level: Final sprite selection (small 7:1 mux)
     logic [15:0] final_data;
+	 always_ff @(posedge clk) begin
+        case (sprite_sel_r)
+            3'd0: data_o <= sprite0_data;
+            3'd1: data_o <= sprite1_data;
+            3'd2: data_o <= sprite2_data;
+            3'd3: data_o <= sprite3_data;
+            3'd4: data_o <= sprite4_data_r;
+            3'd5: data_o <= sprite5_data_r;
+            3'd6: data_o <= sprite6_data_r;
+            default: data_o <= 16'h0000;
+        endcase
+    end
+	
+	/*
     always_comb begin
         case (sprite_sel_r)
             3'd0: final_data = sprite0_data_r;
@@ -245,8 +255,9 @@ module rom_wrapper (
     always_ff @(posedge clk) begin
         data_o_reg <= final_data;
     end
+	*/
     
-    assign data_o = data_o_reg;
+    // assign data_o = data_o_reg;
     
 endmodule
 

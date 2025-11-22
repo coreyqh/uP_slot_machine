@@ -1,5 +1,6 @@
 module rom_wrapper (
     input  logic clk,
+	input logic reset_n,
     input  logic [2:0] sprite_sel_i,
     input  logic [9:0] word_addr_i,
     output logic [15:0] data_o
@@ -20,7 +21,7 @@ module rom_wrapper (
     logic [15:0] r21_data, r22_data, r23_data, r24_data;
     logic [15:0] r25_data, r26_data, r27_data, r28_data;
 
-    logic [27:0] rom_en, rom_en_dly;
+    logic [27:0] rom_en, rom_en_dly, rom_en_dly2;
 
     // Generate enables
     assign rom_en[0]  = (sprite_sel_i == 3'd0) && (bram_sel == 2'd0);
@@ -123,8 +124,14 @@ module rom_wrapper (
         r28_inst (.clk(clk), .address(bram_addr), .dout(r28_data));
 
     // Delay enables
-    always_ff @(posedge clk) begin
-        rom_en_dly <= rom_en;
+    always_ff @(posedge clk, negedge reset_n) begin
+		if (!reset_n) begin
+			rom_en_dly <= 0;
+			rom_en_dly2 <= 0;
+		end else begin
+			rom_en_dly <= rom_en;
+			rom_en_dly2 <= rom_en_dly;
+		end
     end
     
     // ===== KEY FIX: HIERARCHICAL MUX TO REDUCE FANOUT =====
@@ -135,10 +142,10 @@ module rom_wrapper (
     // Sprite 0
     always_comb begin
         case (1'b1)
-            rom_en_dly[0]: sprite0_data = r1_data;
-            rom_en_dly[1]: sprite0_data = r2_data;
-            rom_en_dly[2]: sprite0_data = r3_data;
-            rom_en_dly[3]: sprite0_data = r4_data;
+            rom_en_dly2[0]: sprite0_data = r1_data;
+            rom_en_dly2[1]: sprite0_data = r2_data;
+            rom_en_dly2[2]: sprite0_data = r3_data;
+            rom_en_dly2[3]: sprite0_data = r4_data;
             default: sprite0_data = 16'h0000;
         endcase
     end
@@ -146,10 +153,10 @@ module rom_wrapper (
     // Sprite 1
     always_comb begin
         case (1'b1)
-            rom_en_dly[4]: sprite1_data = r5_data;
-            rom_en_dly[5]: sprite1_data = r6_data;
-            rom_en_dly[6]: sprite1_data = r7_data;
-            rom_en_dly[7]: sprite1_data = r8_data;
+            rom_en_dly2[4]: sprite1_data = r5_data;
+            rom_en_dly2[5]: sprite1_data = r6_data;
+            rom_en_dly2[6]: sprite1_data = r7_data;
+            rom_en_dly2[7]: sprite1_data = r8_data;
             default: sprite1_data = 16'h0000;
         endcase
     end
@@ -157,10 +164,10 @@ module rom_wrapper (
     // Sprite 2
     always_comb begin
         case (1'b1)
-            rom_en_dly[8]:  sprite2_data = r9_data;
-            rom_en_dly[9]:  sprite2_data = r10_data;
-            rom_en_dly[10]: sprite2_data = r11_data;
-            rom_en_dly[11]: sprite2_data = r12_data;
+            rom_en_dly2[8]:  sprite2_data = r9_data;
+            rom_en_dly2[9]:  sprite2_data = r10_data;
+            rom_en_dly2[10]: sprite2_data = r11_data;
+            rom_en_dly2[11]: sprite2_data = r12_data;
             default: sprite2_data = 16'h0000;
         endcase
     end
@@ -168,10 +175,10 @@ module rom_wrapper (
     // Sprite 3
     always_comb begin
         case (1'b1)
-            rom_en_dly[12]: sprite3_data = r13_data;
-            rom_en_dly[13]: sprite3_data = r14_data;
-            rom_en_dly[14]: sprite3_data = r15_data;
-            rom_en_dly[15]: sprite3_data = r16_data;
+            rom_en_dly2[12]: sprite3_data = r13_data;
+            rom_en_dly2[13]: sprite3_data = r14_data;
+            rom_en_dly2[14]: sprite3_data = r15_data;
+            rom_en_dly2[15]: sprite3_data = r16_data;
             default: sprite3_data = 16'h0000;
         endcase
     end
@@ -213,23 +220,53 @@ module rom_wrapper (
     logic [15:0] sprite0_data_r, sprite1_data_r, sprite2_data_r, sprite3_data_r;
     logic [15:0] sprite4_data_r, sprite5_data_r, sprite6_data_r;
 	logic [15:0] sprite4_data_stage1, sprite5_data_stage1, sprite6_data_stage1;
-    logic [2:0] sprite_sel_r;
+	logic [15:0] sprite4_data_stage2, sprite5_data_stage2, sprite6_data_stage2;
+    logic [2:0] sprite_sel_r, sprite_sel_r2, sprite_sel_r3;
 	
-	 always_ff @(posedge clk) begin
-        sprite4_data_stage1 <= sprite4_data;
-        sprite5_data_stage1 <= sprite5_data;
-        sprite6_data_stage1 <= sprite6_data;
+	 always_ff @(posedge clk, negedge reset_n) begin
+		 if (!reset_n) begin
+			sprite4_data_stage1 <= 16'd0;
+			sprite5_data_stage1 <= 16'd0;
+			sprite6_data_stage1 <= 16'd0;
+			
+			sprite4_data_stage2 <= 16'd0;
+			sprite5_data_stage2 <= 16'd0;
+			sprite6_data_stage2 <= 16'd0;
+		end else begin
+			sprite4_data_stage1 <= sprite4_data;
+			sprite5_data_stage1 <= sprite5_data;
+			sprite6_data_stage1 <= sprite6_data;
+			
+			sprite4_data_stage2 <= sprite4_data_stage1;
+			sprite5_data_stage2 <= sprite5_data_stage1;
+			sprite6_data_stage2 <= sprite6_data_stage1;
+		end
 	end
     
-    always_ff @(posedge clk) begin
-        sprite0_data_r <= sprite0_data;
-        sprite1_data_r <= sprite1_data;
-        sprite2_data_r <= sprite2_data;
-        sprite3_data_r <= sprite3_data;
-        sprite4_data_r <= sprite4_data_stage1;
-        sprite5_data_r <= sprite5_data_stage1;
-        sprite6_data_r <= sprite6_data_stage1;
-        sprite_sel_r <= sprite_sel_i;
+    always_ff @(posedge clk, negedge reset_n) begin
+		if (!reset_n) begin
+			sprite0_data_r <= 16'd0;
+			sprite1_data_r <= 16'd0;
+			sprite2_data_r <= 16'd0;
+			sprite3_data_r <= 16'd0;
+			sprite4_data_r <= 16'd0;
+			sprite5_data_r <= 16'd0;
+			sprite6_data_r <= 16'd0;
+			sprite_sel_r <= 16'd0;
+			sprite_sel_r2 <= 16'd0;
+			sprite_sel_r3 <= 16'd0;
+		end else begin
+			sprite0_data_r <= sprite0_data;
+			sprite1_data_r <= sprite1_data;
+			sprite2_data_r <= sprite2_data;
+			sprite3_data_r <= sprite3_data;
+			sprite4_data_r <= sprite4_data_stage2;
+			sprite5_data_r <= sprite5_data_stage2;
+			sprite6_data_r <= sprite6_data_stage2;
+			sprite_sel_r <= sprite_sel_i;
+			sprite_sel_r2 <= sprite_sel_r;
+			sprite_sel_r3 <= sprite_sel_r2;
+		end
     end
     
     // Third level: Final sprite selection (small 7:1 mux)
@@ -251,7 +288,7 @@ module rom_wrapper (
 	
 	
     always_comb begin
-        case (sprite_sel_r)
+        case (sprite_sel_r3)
             3'd0: data_o = sprite0_data_r;
             3'd1: data_o = sprite1_data_r;
             3'd2: data_o = sprite2_data_r;
@@ -274,5 +311,4 @@ module rom_wrapper (
     // assign data_o = data_o_reg;
     
 endmodule
-
 

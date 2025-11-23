@@ -71,6 +71,8 @@ int main(void) {
 
   while(1) {
 
+    printf("RANDOM NUMBER: %x", get_random_number());
+
     if (update_pending) {
       credits_BCD = binToBCD3(credit_count);
       // 2 most significant digits in bits 15:8

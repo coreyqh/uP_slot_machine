@@ -24,7 +24,7 @@ module memory_controller (
     localparam REEL1_START_H = 190;
     localparam REEL2_START_H = 398;
     localparam REEL3_START_H = 606;
-    localparam REELS_START_V = 50;
+    localparam REELS_START_V = 60;
     localparam REEL_DISPLAY_HEIGHT = 430;
     localparam REELS_END_V = REELS_START_V + REEL_DISPLAY_HEIGHT - 1;
     localparam PIXELS_PER_FRAME = 24;
@@ -81,7 +81,7 @@ module memory_controller (
     ///////////////////////
     // Target sprite calculation
     logic [9:0] centering_offset;
-    assign centering_offset = (REEL_DISPLAY_HEIGHT / 2) - (SPRITE_HEIGHT / 2);
+    assign centering_offset = (REEL_DISPLAY_HEIGHT / 2) - (SPRITE_HEIGHT); // not dividng by 2 for sprite height bc we're already scaling to 128
 
     logic [2:0] reel1_target_pos, reel2_target_pos, reel3_target_pos;
     
@@ -114,9 +114,9 @@ module memory_controller (
         endcase
     end
     
-    assign reel1_ending_offset = (reel1_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
-    assign reel2_ending_offset = (reel2_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
-    assign reel3_ending_offset = (reel3_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
+    //assign reel1_ending_offset = (reel1_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
+    //assign reel2_ending_offset = (reel2_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
+    //assign reel3_ending_offset = (reel3_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
     ///////////////////////////////
 
     logic vsync_prev;
@@ -163,6 +163,21 @@ module memory_controller (
                 reel2_spin_amt <= next_reel2_spin_amt;
                 reel3_spin_amt <= next_reel3_spin_amt;
                 state_led <= next_state_led;
+				
+				reel1_final_sprite <= final1_sprite;
+                reel2_final_sprite <= final2_sprite;
+                reel3_final_sprite <= final3_sprite;
+				
+				if (reel1_spin_amt == 0) begin
+					reel1_ending_offset <= (reel1_target_pos * (SPRITE_HEIGHT + SPRITE_HEIGHT) + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
+				end
+				if (reel2_spin_amt == 0) begin
+					reel2_ending_offset <= (reel2_target_pos * (SPRITE_HEIGHT + SPRITE_HEIGHT) + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
+				end
+				if (reel3_spin_amt == 0) begin
+					reel3_ending_offset <= (reel3_target_pos * (SPRITE_HEIGHT + SPRITE_HEIGHT) + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
+				end
+				
             end
         end
     end

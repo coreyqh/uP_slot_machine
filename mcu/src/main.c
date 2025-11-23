@@ -26,6 +26,7 @@ int main(void) {
   // 1. Enable SYSCFG clock domain in RCC
   RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
   // 2. Configure EXTICR for the input button interrupt
+  SYSCFG->EXTICR[2] |= _VAL2FLD(SYSCFG_EXTICR3_EXTI11, 0b000); // Select PA11
   SYSCFG->EXTICR[2] |= _VAL2FLD(SYSCFG_EXTICR3_EXTI10, 0b000); // Select PA10
   SYSCFG->EXTICR[2] |= _VAL2FLD(SYSCFG_EXTICR3_EXTI8,  0b000); // Select PA8
 
@@ -38,20 +39,24 @@ int main(void) {
   // 1. Configure mask bits
   EXTI->IMR1 |= (1 << gpioPinOffset(BUTTON_PIN)); // Configure the mask bit for button
   EXTI->IMR1 |= (1 << gpioPinOffset(COIN_PIN));   // Configure the mask bit for coin slot
+  EXTI->IMR1 |= (1 << gpioPinOffset(DONE_PIN));   // Configure the mask bit for done signal
 
   // 2. Rising edge triggers
-  EXTI->RTSR1 |=  (1 << gpioPinOffset(QA_PIN));   // Enable rising edge trigger for button
-  EXTI->RTSR1 &= ~(1 << gpioPinOffset(QB_PIN));   // Disable rising edge trigger for coin slot
+  EXTI->RTSR1 |=  (1 << gpioPinOffset(BUTTON_PIN));   // Enable rising edge trigger for button
+  EXTI->RTSR1 |=  (1 << gpioPinOffset(DONE_PIN));     // Enable rising edge trigger for button
+  EXTI->RTSR1 &= ~(1 << gpioPinOffset(COIN_PIN));     // Disable rising edge trigger for coin slot
 
   // 3. Falling edge triggers
-  EXTI->FTSR1 &= ~(1 << gpioPinOffset(QA_PIN));   // Disable rising edge trigger for button
-  EXTI->FTSR1 |=  (1 << gpioPinOffset(QB_PIN));   // Enable rising edge trigger for coin slot
+  EXTI->FTSR1 &= ~(1 << gpioPinOffset(BUTTON_PIN));   // Disable rising edge trigger for button
+  EXTI->FTSR1 &= ~(1 << gpioPinOffset(DONE_PIN));     // Disable rising edge trigger for button
+  EXTI->FTSR1 |=  (1 << gpioPinOffset(COIN_PIN));     // Enable rising edge trigger for coin slot
 
   // 4. Turn on EXTI interrupt in NVIC_ISER
   NVIC->ISER[0] |= (1 << EXTI9_5_IRQn);           // enable EXTI interrupts for pin 8
   NVIC->ISER[1] |= (1 << (EXTI15_10_IRQn - 32));  // enable EXTI interrupts for pin 10
 
-  // TODO TODO TODO TRUE RANDOM NUMBER GENERATION TODO TODO TODO //
+  // Initialize
+  initRNG();
 
   uint16_t winnings     = 0;
   uint16_t credits_BCD  = 0;
@@ -62,6 +67,7 @@ int main(void) {
   uint8_t  wager = 1;
   uint8_t  spi_data_upper = 0;
   uint8_t  spi_data_lower = 0;
+  uint8_t  done = 0
 
   while(1) {
 
@@ -84,11 +90,11 @@ int main(void) {
 
     if (button_push) {
       if (credit_count <= wager) {
-        reel1        = random0to6();
-        reel2        = random0to6();
-        reel3        = random0to6();
+        reel1 = get_random_number() % 7;
+        reel2 = get_random_number() % 7;
+        reel3 = get_random_number() % 7;
 
-        winnings     = calcWinnings(reel1, reel2, reel3);
+        winnings     = wager * calcWinnings(reel1, reel2, reel3);
         winnings_BCD = binToBCD3((winnings >= 100) ? 99 : winnings); // saturate at 99 for 7-segs
 
         // sprite indeces for reel 1 and 2 bits 15:8
@@ -102,9 +108,8 @@ int main(void) {
         spiSendReceive(spi_data_lower);
         digitalWrite(SPI_CE, PIO_LOW);
 
-        // TODO: CONFIRM DONE IS NEVER ALREADY HIGH 
-        //       OR CHANGE TO INTERRUPT TRIGGERED!
-        while (!digitalRead(DONE_PIN)); // wait for done signal from FPGA
+        while (!done); // wait for done signal irq from FPGA
+        done = 0;
 
 
         // most significant digits in bits 11:8
@@ -143,6 +148,11 @@ void EXTI15_10_IRQHandler(void){
         // If so, clear the interrupt (NB: Write 1 to reset.)
         EXTI->PR1 |= (1 << gpioPinOffset(BUTTON_PIN));
         button_push = 1;
+    } 
+    if (EXTI->PR1 & (1 << gpioPinOffset(DONE_PIN))){
+        // If so, clear the interrupt (NB: Write 1 to reset.)
+        EXTI->PR1 |= (1 << gpioPinOffset(DONE_PIN));
+        done = 1;
     } 
 }
 
@@ -197,12 +207,15 @@ uint16_t binToBCD3(uint16_t binary_val) {
     return bcd_result;
 }
 
-uint8_t random0to6() {
-  // TODO: PLACEHOLDER
-  return 0;
-}
-
 uint16_t calcWinnings(uin8_t reel1, uin8_t reel2, uin8_t reel3) {
-  // TODO: PLACEHOLDER
-  return 42;
+    uint16_t winnings = 0;  
+
+    // general win scenario
+    if (reel1 == reel2 && reel2 == reel2) {
+      winnings = winvals[reel1];
+    }
+
+    // special cases
+    
+  
 }

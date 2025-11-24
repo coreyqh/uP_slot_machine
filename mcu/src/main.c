@@ -5,11 +5,12 @@
 // Include the device header
 #include "main.h"
 #include <stm32l432xx.h>
-#include "STM32L432KC.h"
+#include "C:\Users\chickson\workspace\uP_slot_machine\mcu\lib\STM32L432KC.h"
 
 uint8_t update_pending = 0;
 uint8_t credit_count   = 0;
 uint8_t button_push    = 0;
+uint8_t  done = 0;
 
 int main(void) {
   // Initialization code
@@ -67,11 +68,8 @@ int main(void) {
   uint8_t  wager = 1;
   uint8_t  spi_data_upper = 0;
   uint8_t  spi_data_lower = 0;
-  uint8_t  done = 0
 
   while(1) {
-
-    printf("RANDOM NUMBER: %x", get_random_number());
 
     if (update_pending) {
       credits_BCD = binToBCD3(credit_count);
@@ -209,7 +207,7 @@ uint16_t binToBCD3(uint16_t binary_val) {
     return bcd_result;
 }
 
-uint16_t calcWinnings(uin8_t reel1, uin8_t reel2, uin8_t reel3) {
+uint16_t calcWinnings(uint8_t reel1, uint8_t reel2, uint8_t reel3) {
     uint16_t winnings = 0;  
 
     // general win scenario

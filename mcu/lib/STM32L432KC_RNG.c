@@ -1,32 +1,63 @@
 // STM32L432KC_RNG.c
 // Source code for True Random Number Generator (TRNG) functions
 
+#include <stm32l432xx.h>
 #include "STM32L432KC.h"
 #include "STM32L432KC_RNG.h"
 #include "STM32L432KC_RCC.h"
 
+// /* 
+//  * Enables the RNG peripheral and its clock.
+//  * The RNG uses an internal analog source and does not require GPIO configuration.
+//  * Note: The L4 series RNG is typically clocked by the HSI48 clock, 
+//  * which needs to be enabled and configured if not already part of your system_init.
+//  * Refer to the STM32L432KC reference manual for low-level clock configuration details.
+//  */ 
+// void initRNG(void) {
+//     // 1. Enable the HSI48 clock (required for the TRNG on this specific chip)
+//     // The specific register for HSI48 depends on the exact L4 sub-series.
+//     // For many L4 devices, it's in RCC->CR or RCC->CCIPR. 
+//     // This example assumes it's available and stable. A full implementation would check the HSI48RDY flag.
+
+//     // 2. Enable the clock access to the RNG peripheral (located on the AHB2 bus)
+//     RCC->AHB2ENR |= RCC_AHB2ENR_RNGEN; 
+    
+//     // // 3. Perform the conditional reset sequence required for L4+ series (safe to include for L432KC)
+//     // // Write CONDRST=1 and RNGEN=0
+//     // RNG->CR = RNG_CR_CONDRST;
+//     // // Clear CONDRST bit and set RNGEN=1 to enable the generator
+//     // RNG->CR &= ~RNG_CR_CONDRST;
+//     // RNG->CR |= RNG_CR_RNGEN;
+// }
+
 /* 
- * Enables the RNG peripheral and its clock.
- * The RNG uses an internal analog source and does not require GPIO configuration.
- * Note: The L4 series RNG is typically clocked by the HSI48 clock, 
- * which needs to be enabled and configured if not already part of your system_init.
- * Refer to the STM32L432KC reference manual for low-level clock configuration details.
+ * Enables the HSI48 clock and configures the RNG peripheral for the STM32L432KC.
  */ 
 void initRNG(void) {
-    // 1. Enable the HSI48 clock (required for the TRNG on this specific chip)
-    // The specific register for HSI48 depends on the exact L4 sub-series.
-    // For many L4 devices, it's in RCC->CR or RCC->CCIPR. 
-    // This example assumes it's available and stable. A full implementation would check the HSI48RDY flag.
+    // 1. Enable the HSI48 clock. This is critical for the TRNG operation.
+    // Set the HSI48ON bit in RCC->CR
+    RCC->CRRCR |= RCC_CRRCR_HSI48ON;
+    while (!(RCC->CRRCR & RCC_CRRCR_HSI48RDY));
+    // 2. Select HSI48 as the clock source for the RNG in the Clock Configuration Register
+    // The RNGSEL[1:0] bits in RCC->CCIPR determine the clock source for RNG
+    // For L43x/L44x, 01 is typically HSI48, check your specific manual's RCC->CCIPR register description.
+    // Clear the current RNGSEL bits first (bits 13 and 12)
+    // RCC->CCIPR &= ~RCC_CCIPR_RNGSEL; 
+    // // Set RNGSEL to 01 (Select HSI48 clock)
+    // RCC->CCIPR |= RCC_CCIPR_RNGSEL_0; // Or use the specific bitmask defined in your header, likely (1 << 12)
 
-    // 2. Enable the clock access to the RNG peripheral (located on the AHB2 bus)
+    RCC->CCIPR |= _VAL2FLD(RCC_CCIPR_CLK48SEL, 0b00);
+
+    // 3. Enable the clock access to the RNG peripheral (located on the AHB2 bus)
     RCC->AHB2ENR |= RCC_AHB2ENR_RNGEN; 
     
-    // 3. Perform the conditional reset sequence required for L4+ series (safe to include for L432KC)
-    // Write CONDRST=1 and RNGEN=0
-    RNG->CR = RNG_CR_CONDRST;
-    // Clear CONDRST bit and set RNGEN=1 to enable the generator
-    RNG->CR &= ~RNG_CR_CONDRST;
+    // A dummy read to ensure the clock enable has propagated
+    volatile uint32_t temp = RCC->AHB2ENR; 
+    (void)temp; 
+
+    // 4. Enable the Random Number Generator
     RNG->CR |= RNG_CR_RNGEN;
+
 }
 
 /* 

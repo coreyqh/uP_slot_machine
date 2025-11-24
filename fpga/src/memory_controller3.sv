@@ -665,36 +665,4 @@ module memory_controller (
     end
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-	// output
-	always_comb begin 
-		if (active_video_d4) begin 
-			if (inside_reel_r4) begin  
-				pixel_rgb = sprite_pixel_color;
-			end else begin
-				pixel_rgb = 3'b000;
-			end
-		end else begin
-			pixel_rgb = 3'b000;
-		end
-	end 
-
 endmodule

@@ -140,31 +140,31 @@ module rom_wrapper (
     // r28 r28_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r28_data));
 
     // Combinational sprites (4-6) - KEEP AS COMBINATIONAL, DON'T REGISTER OUTPUT
-    rom_block2 #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom20.mem"), .UNIQUE_ID(17)) 
+    rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom20.mem"), .UNIQUE_ID(17)) 
         r17_inst (.clk(clk), .address(bram_addr), .dout(r17_data));
-    rom_block2 #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom21.mem"), .UNIQUE_ID(18)) 
+    rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom21.mem"), .UNIQUE_ID(18)) 
         r18_inst (.clk(clk), .address(bram_addr), .dout(r18_data));
-    rom_block2 #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom22.mem"), .UNIQUE_ID(19)) 
+    rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom22.mem"), .UNIQUE_ID(19)) 
         r19_inst (.clk(clk), .address(bram_addr), .dout(r19_data));
-    rom_block2 #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom23.mem"), .UNIQUE_ID(20)) 
+    rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom23.mem"), .UNIQUE_ID(20)) 
         r20_inst (.clk(clk), .address(bram_addr), .dout(r20_data));
     
-    rom_block2 #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom24.mem"), .UNIQUE_ID(21)) 
+    rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom24.mem"), .UNIQUE_ID(21)) 
         r21_inst (.clk(clk), .address(bram_addr), .dout(r21_data));
-    rom_block2 #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom25.mem"), .UNIQUE_ID(22)) 
+    rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom25.mem"), .UNIQUE_ID(22)) 
         r22_inst (.clk(clk), .address(bram_addr), .dout(r22_data));
-    rom_block2 #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom26.mem"), .UNIQUE_ID(23)) 
+    rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom26.mem"), .UNIQUE_ID(23)) 
         r23_inst (.clk(clk), .address(bram_addr), .dout(r23_data));
-    rom_block2 #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom27.mem"), .UNIQUE_ID(24)) 
+    rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom27.mem"), .UNIQUE_ID(24)) 
         r24_inst (.clk(clk), .address(bram_addr), .dout(r24_data));
     
-    rom_block2 #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom4.mem"), .UNIQUE_ID(25)) 
+    rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom4.mem"), .UNIQUE_ID(25)) 
         r25_inst (.clk(clk), .address(bram_addr), .dout(r25_data));
-    rom_block2 #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom5.mem"), .UNIQUE_ID(26)) 
+    rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom5.mem"), .UNIQUE_ID(26)) 
         r26_inst (.clk(clk), .address(bram_addr), .dout(r26_data));
-    rom_block2 #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom6.mem"), .UNIQUE_ID(27)) 
+    rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom6.mem"), .UNIQUE_ID(27)) 
         r27_inst (.clk(clk), .address(bram_addr), .dout(r27_data));
-    rom_block2 #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom7.mem"), .UNIQUE_ID(28)) 
+    rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom7.mem"), .UNIQUE_ID(28)) 
         r28_inst (.clk(clk), .address(bram_addr), .dout(r28_data));
 
     // Delay enables
@@ -230,10 +230,10 @@ module rom_wrapper (
     // Sprite 4
     always_comb begin
         case (1'b1)
-            rom_en[16]: sprite4_data = r17_data;
-            rom_en[17]: sprite4_data = r18_data;
-            rom_en[18]: sprite4_data = r19_data;
-            rom_en[19]: sprite4_data = r20_data;
+            rom_en_dly2[16]: sprite4_data = r17_data;
+            rom_en_dly2[17]: sprite4_data = r18_data;
+            rom_en_dly2[18]: sprite4_data = r19_data;
+            rom_en_dly2[19]: sprite4_data = r20_data;
             default: sprite4_data = 16'h0000;
         endcase
     end
@@ -241,10 +241,10 @@ module rom_wrapper (
     // Sprite 5
     always_comb begin
         case (1'b1)
-            rom_en[20]: sprite5_data = r21_data;
-            rom_en[21]: sprite5_data = r22_data;
-            rom_en[22]: sprite5_data = r23_data;
-            rom_en[23]: sprite5_data = r24_data;
+            rom_en_dly2[20]: sprite5_data = r21_data;
+            rom_en_dly2[21]: sprite5_data = r22_data;
+            rom_en_dly2[22]: sprite5_data = r23_data;
+            rom_en_dly2[23]: sprite5_data = r24_data;
             default: sprite5_data = 16'h0000;
         endcase
     end
@@ -252,10 +252,10 @@ module rom_wrapper (
     // Sprite 6
     always_comb begin
         case (1'b1)
-            rom_en[24]: sprite6_data = r25_data;
-            rom_en[25]: sprite6_data = r26_data;
-            rom_en[26]: sprite6_data = r27_data;
-            rom_en[27]: sprite6_data = r28_data;
+            rom_en_dly2[24]: sprite6_data = r25_data;
+            rom_en_dly2[25]: sprite6_data = r26_data;
+            rom_en_dly2[26]: sprite6_data = r27_data;
+            rom_en_dly2[27]: sprite6_data = r28_data;
             default: sprite6_data = 16'h0000;
         endcase
     end
@@ -267,25 +267,25 @@ module rom_wrapper (
 	logic [15:0] sprite4_data_stage2, sprite5_data_stage2, sprite6_data_stage2;
     logic [2:0] sprite_sel_r, sprite_sel_r2, sprite_sel_r3;
 	
-	 always_ff @(posedge clk, negedge reset_n) begin
-		 if (!reset_n) begin
-			sprite4_data_stage1 <= 16'd0;
-			sprite5_data_stage1 <= 16'd0;
-			sprite6_data_stage1 <= 16'd0;
+	 //always_ff @(posedge clk, negedge reset_n) begin
+		 //if (!reset_n) begin
+			//sprite4_data_stage1 <= 16'd0;
+			//sprite5_data_stage1 <= 16'd0;
+			//sprite6_data_stage1 <= 16'd0;
 			
-			sprite4_data_stage2 <= 16'd0;
-			sprite5_data_stage2 <= 16'd0;
-			sprite6_data_stage2 <= 16'd0;
-		end else begin
-			sprite4_data_stage1 <= sprite4_data;
-			sprite5_data_stage1 <= sprite5_data;
-			sprite6_data_stage1 <= sprite6_data;
+			//sprite4_data_stage2 <= 16'd0;
+			//sprite5_data_stage2 <= 16'd0;
+			//sprite6_data_stage2 <= 16'd0;
+		//end else begin
+			//sprite4_data_stage1 <= sprite4_data;
+			//sprite5_data_stage1 <= sprite5_data;
+			//sprite6_data_stage1 <= sprite6_data;
 			
-			sprite4_data_stage2 <= sprite4_data_stage1;
-			sprite5_data_stage2 <= sprite5_data_stage1;
-			sprite6_data_stage2 <= sprite6_data_stage1;
-		end
-	end
+			//sprite4_data_stage2 <= sprite4_data_stage1;
+			//sprite5_data_stage2 <= sprite5_data_stage1;
+			//sprite6_data_stage2 <= sprite6_data_stage1;
+		//end
+	//end
     
     always_ff @(posedge clk, negedge reset_n) begin
 		if (!reset_n) begin
@@ -304,9 +304,9 @@ module rom_wrapper (
 			sprite1_data_r <= sprite1_data;
 			sprite2_data_r <= sprite2_data;
 			sprite3_data_r <= sprite3_data;
-			sprite4_data_r <= sprite4_data_stage2;
-			sprite5_data_r <= sprite5_data_stage2;
-			sprite6_data_r <= sprite6_data_stage2;
+			sprite4_data_r <= sprite4_data;
+			sprite5_data_r <= sprite5_data;
+			sprite6_data_r <= sprite6_data;
 			sprite_sel_r <= sprite_sel_i;
 			sprite_sel_r2 <= sprite_sel_r;
 			sprite_sel_r3 <= sprite_sel_r2;
@@ -355,3 +355,4 @@ module rom_wrapper (
     // assign data_o = data_o_reg;
     
 endmodule
+

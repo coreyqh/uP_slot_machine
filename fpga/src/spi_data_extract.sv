@@ -12,10 +12,12 @@ module spi_data_extract (input  logic sclk,
                          output logic [11:0] win_credits, 
                          output logic is_win, 
                          output logic [11:0] total_credits, 
-                         output logic is_total);
+                         output logic is_total
+						 // output logic ready
+						 ); 
 
     logic [15:0] data;
-    logic [4:0] counter;
+    logic [3:0] counter;
     logic ready;
 
     localparam REQ_SPIN   = 4'b0001;
@@ -23,7 +25,11 @@ module spi_data_extract (input  logic sclk,
     localparam REQ_UPDATE = 4'b0011;
 
     always_ff @(posedge sclk, negedge reset_n) begin
-        if (!reset_n | cs) begin
+        if (!reset_n) begin
+            data <= 16'b0;
+            ready <= 0;
+            counter <= 5'b0;
+		end else if (cs) begin
             data <= 16'b0;
             ready <= 0;
             counter <= 5'b0;
@@ -31,11 +37,13 @@ module spi_data_extract (input  logic sclk,
             if (!cs & (!ready)) begin // cs is active low
                 data <= {data[14:0], copi};
 
-                if (counter == 5'd15) begin
+                if (counter == 4'd15) begin
                     ready <= 1;
-                end
-
-                counter <= counter + 5'd1;
+					counter <= 16'b0;
+                end else begin
+					counter <= counter + 4'd1;
+					ready <= 0;
+				end
             end
         end
     end

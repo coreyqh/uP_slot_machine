@@ -5,11 +5,12 @@
 // Include the device header
 #include "main.h"
 #include <stm32l432xx.h>
-#include "STM32L432KC.h"
+#include "C:\Users\chickson\workspace\uP_slot_machine\mcu\lib\STM32L432KC.h"
 
 uint8_t update_pending = 0;
-uint8_t credit_count   = 0;
+uint8_t credit_count   = 10; // FIXME: 10 for debug
 uint8_t button_push    = 0;
+uint8_t  done = 0;
 
 int main(void) {
   // Initialization code
@@ -26,8 +27,8 @@ int main(void) {
   // 1. Enable SYSCFG clock domain in RCC
   RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
   // 2. Configure EXTICR for the input button interrupt
-  SYSCFG->EXTICR[2] |= _VAL2FLD(SYSCFG_EXTICR3_EXTI11, 0b000); // Select PA11
   SYSCFG->EXTICR[2] |= _VAL2FLD(SYSCFG_EXTICR3_EXTI10, 0b000); // Select PA10
+  SYSCFG->EXTICR[2] |= _VAL2FLD(SYSCFG_EXTICR3_EXTI9,  0b000); // Select PA9
   SYSCFG->EXTICR[2] |= _VAL2FLD(SYSCFG_EXTICR3_EXTI8,  0b000); // Select PA8
 
   // Enable interrupts globally
@@ -43,17 +44,17 @@ int main(void) {
 
   // 2. Rising edge triggers
   EXTI->RTSR1 |=  (1 << gpioPinOffset(BUTTON_PIN));   // Enable rising edge trigger for button
-  EXTI->RTSR1 |=  (1 << gpioPinOffset(DONE_PIN));     // Enable rising edge trigger for button
+  EXTI->RTSR1 |=  (1 << gpioPinOffset(DONE_PIN));     // Enable rising edge trigger for done
   EXTI->RTSR1 &= ~(1 << gpioPinOffset(COIN_PIN));     // Disable rising edge trigger for coin slot
 
   // 3. Falling edge triggers
-  EXTI->FTSR1 &= ~(1 << gpioPinOffset(BUTTON_PIN));   // Disable rising edge trigger for button
-  EXTI->FTSR1 &= ~(1 << gpioPinOffset(DONE_PIN));     // Disable rising edge trigger for button
-  EXTI->FTSR1 |=  (1 << gpioPinOffset(COIN_PIN));     // Enable rising edge trigger for coin slot
+  EXTI->FTSR1 &= ~(1 << gpioPinOffset(BUTTON_PIN));   // Disable falling edge trigger for button
+  EXTI->FTSR1 &= ~(1 << gpioPinOffset(DONE_PIN));     // Disable falling edge trigger for button
+  EXTI->FTSR1 |=  (1 << gpioPinOffset(COIN_PIN));     // Enable falling edge trigger for coin slot
 
   // 4. Turn on EXTI interrupt in NVIC_ISER
-  NVIC->ISER[0] |= (1 << EXTI9_5_IRQn);           // enable EXTI interrupts for pin 8
-  NVIC->ISER[1] |= (1 << (EXTI15_10_IRQn - 32));  // enable EXTI interrupts for pin 10
+  NVIC->ISER[0] |= (1 << EXTI9_5_IRQn);           // enable EXTI interrupts for pin 8 an 9
+  NVIC->ISER[1] |= (1 << (EXTI15_10_IRQn - 32));  // enable EXTI interrupts for pin 10  
 
   // Initialize
   initRNG();
@@ -67,11 +68,9 @@ int main(void) {
   uint8_t  wager = 1;
   uint8_t  spi_data_upper = 0;
   uint8_t  spi_data_lower = 0;
-  uint8_t  done = 0
 
+  credit_count = 100;
   while(1) {
-
-    printf("RANDOM NUMBER: %x", get_random_number());
 
     if (update_pending) {
       credits_BCD = binToBCD3(credit_count);
@@ -91,7 +90,7 @@ int main(void) {
     }
 
     if (button_push) {
-      if (credit_count <= wager) {
+      if (credit_count >= wager) {
         reel1 = get_random_number() % 7;
         reel2 = get_random_number() % 7;
         reel3 = get_random_number() % 7;
@@ -145,16 +144,13 @@ int main(void) {
 // SIDE EFFECTS: SETS `button_push` FLAG IN `main()`
 //
 void EXTI15_10_IRQHandler(void){
-    // Check that thr button was what triggered our interrupt
-    if (EXTI->PR1 & (1 << gpioPinOffset(BUTTON_PIN))){
+      // Check that Quad A was what triggered our interrupt
+    if (EXTI->PR1 & (1 << gpioPinOffset(COIN_PIN))){
         // If so, clear the interrupt (NB: Write 1 to reset.)
-        EXTI->PR1 |= (1 << gpioPinOffset(BUTTON_PIN));
-        button_push = 1;
-    } 
-    if (EXTI->PR1 & (1 << gpioPinOffset(DONE_PIN))){
-        // If so, clear the interrupt (NB: Write 1 to reset.)
-        EXTI->PR1 |= (1 << gpioPinOffset(DONE_PIN));
-        done = 1;
+        EXTI->PR1 |= (1 << gpioPinOffset(COIN_PIN));
+        
+        credit_count++;
+        update_pending = 1;
     } 
 }
 
@@ -166,13 +162,17 @@ void EXTI15_10_IRQHandler(void){
 // SIDE EFFECTS: INCREMENTS `credit_count` AND SETS `update_pending`
 //               IN `main()`
 void EXTI9_5_IRQHandler(void){
-    // Check that Quad A was what triggered our interrupt
-    if (EXTI->PR1 & (1 << gpioPinOffset(COIN_PIN))){
+
+    if (EXTI->PR1 & (1 << gpioPinOffset(DONE_PIN))){
         // If so, clear the interrupt (NB: Write 1 to reset.)
-        EXTI->PR1 |= (1 << gpioPinOffset(COIN_PIN));
-        
-        credit_count++;
-        update_pending = 1;
+        EXTI->PR1 |= (1 << gpioPinOffset(DONE_PIN));
+        done = 1;
+    } 
+      // Check that thr button was what triggered our interrupt
+    if (EXTI->PR1 & (1 << gpioPinOffset(BUTTON_PIN))){
+        // If so, clear the interrupt (NB: Write 1 to reset.)
+        EXTI->PR1 |= (1 << gpioPinOffset(BUTTON_PIN));
+        button_push = 1;
     } 
 }
 
@@ -209,15 +209,15 @@ uint16_t binToBCD3(uint16_t binary_val) {
     return bcd_result;
 }
 
-uint16_t calcWinnings(uin8_t reel1, uin8_t reel2, uin8_t reel3) {
-    uint16_t winnings = 0;  
+uint16_t calcWinnings(uint8_t reel1, uint8_t reel2, uint8_t reel3) {
+  return 42; // for debug
+  // uint16_t winnings = 0;  
+    // // general win scenario
+    // if (reel1 == reel2 && reel2 == reel2) {
+    //   winnings = winvals[reel1];
+    // }
 
-    // general win scenario
-    if (reel1 == reel2 && reel2 == reel2) {
-      winnings = winvals[reel1];
-    }
-
-    // special cases
+    // // special cases
     
   
 }

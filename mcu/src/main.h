@@ -1,15 +1,15 @@
 #ifndef MAIN_H_INCLUDED
 #define MAIN_H_INCLUDED
 
-#include "STM32L432KC.h"
 #include <stm32l432xx.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+//#include "STM32L432KC.h"
 
-#define COIN_PIN   PA8
-#define BUTTON_PIN PA10
-#define DONE_PIN   PA11
+#define COIN_PIN   PA10
+#define BUTTON_PIN PA8
+#define DONE_PIN   PA9
 
 #define BR   1
 #define CPOL 0
@@ -42,6 +42,6 @@ const uint8_t winvals[] = {LEMON_VALUE, CHERRY_VALUE, BELL_VALUE, 3*BAR_VALUE, 9
 
 uint16_t binToBCD3(uint16_t binary_val);
 uint8_t  random0to6();
-uint16_t calcWinnings(uin8_t reel1, uin8_t reel2, uin8_t reel3);
+uint16_t calcWinnings(uint8_t reel1, uint8_t reel2, uint8_t reel3);
 
 #endif 

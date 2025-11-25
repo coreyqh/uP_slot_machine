@@ -1,6 +1,10 @@
 // STM32L432KC_RNG.h
 // header for True Random Number Generator (TRNG) functions
 
+#ifndef RNG_H
+#define RNG_H
+
+#include <stm32l432xx.h>
 #include "STM32L432KC.h"
 #include "STM32L432KC_RNG.h"
 #include "STM32L432KC_RCC.h"
@@ -20,3 +24,5 @@ void initRNG(void);
  * -- return: a 32-bit true random number (uint32_t)
  */
 uint32_t get_random_number(void);
+
+#endif

@@ -94,6 +94,17 @@ module slot_machine_top (//input  logic clk,
     );
 
     // seven segment display
+	//credit_controller credit_controller (
+		//.clk(pll_clk_internal),
+		//.reset_n(reset_n),
+		//.won_amt1(win_credits[11:8]),
+		//.won_amt2(win_credits[7:4]),
+		//.credit_amt1(total_credits[11:8]),
+		//.credit_amt2(total_credits[7:4]),
+		//.credit_amt3(total_credits[3:0]),
+		//.enable_sel(select),
+		//.seg(seven_segment_output)
+	//);
     // ROM block --> muxing
 
 endmodule

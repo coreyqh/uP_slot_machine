@@ -11,6 +11,7 @@ module rom_wrapper (
     
     assign bram_addr = word_addr_i[7:0];
     assign bram_sel  = word_addr_i[9:8];
+	
 
     // All ROM outputs
     logic [15:0] r1_data, r2_data, r3_data, r4_data;
@@ -60,26 +61,26 @@ module rom_wrapper (
     assign rom_en[27] = (sprite_sel_i == 3'd6) && (bram_sel == 2'd3);
 
     // EBR-based sprites (0-3)
-    //r1  r1_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r1_data));
-    //r2  r2_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r2_data));
-    //r3  r3_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r3_data));
-    //r4  r4_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r4_data));
+    //r1  r1_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r1_data));
+    //r2  r2_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r2_data));
+    //r3  r3_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r3_data));
+    //r4  r4_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r4_data));
     
-    //r5  r5_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r5_data));
-    //r6  r6_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r6_data));
-    //r7  r7_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r7_data));
-    //r8  r8_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r8_data));
+    //r5  r5_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(rom_en[4]), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r5_data));
+    //r6  r6_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(rom_en[5]), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r6_data));
+    //r7  r7_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(rom_en[6]), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r7_data));
+    //r8  r8_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(rom_en[7]), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r8_data));
     
-    //r9  r9_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r9_data));
-    //r10 r10_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r10_data));
-    //r11 r11_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r11_data));
-    //r12 r12_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r12_data));
+    //r9  r9_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(rom_en[8]), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r9_data));
+    //r10 r10_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(rom_en[9]), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r10_data));
+    //r11 r11_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(rom_en[10]), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r11_data));
+    //r12 r12_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(rom_en[11]), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r12_data));
     
-    //r13 r13_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r13_data));
-    //r14 r14_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r14_data));
-    //r15 r15_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r15_data));
-    //r16 r16_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1'b1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r16_data));
-
+    //r13 r13_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(rom_en[12]), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r13_data));
+    //r14 r14_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(rom_en[13]), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r14_data));
+    //r15 r15_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(rom_en[14]), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r15_data));
+    //r16 r16_ip (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(rom_en[15]), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r16_data));
+ 
 	
 
 	rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom0.mem"), .UNIQUE_ID(1)) 

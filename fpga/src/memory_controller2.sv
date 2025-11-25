@@ -24,10 +24,10 @@ module memory_controller (
     localparam REEL1_START_H = 190;
     localparam REEL2_START_H = 398;
     localparam REEL3_START_H = 606;
-    localparam REELS_START_V = 60;
+    localparam REELS_START_V = 50;
     localparam REEL_DISPLAY_HEIGHT = 430;
     localparam REELS_END_V = REELS_START_V + REEL_DISPLAY_HEIGHT - 1;
-    localparam PIXELS_PER_FRAME = 24;
+    localparam PIXELS_PER_FRAME = 12;
     
     // Reel sequences (LUTs)
     logic [2:0] reel1_sequence [0:6];
@@ -35,33 +35,33 @@ module memory_controller (
     logic [2:0] reel3_sequence [0:6];
     
     initial begin
-		// Reel 1: sequential (no restriction)
-		reel1_sequence[0] = 3'd0; 
-		reel1_sequence[1] = 3'd1;
-		reel1_sequence[2] = 3'd2; 
-		reel1_sequence[3] = 3'd3;
-		reel1_sequence[4] = 3'd4; 
-		reel1_sequence[5] = 3'd5;
-		reel1_sequence[6] = 3'd6;  
-		
-		// Reel 2: shuffled, no consecutive-value adjacency
-		reel2_sequence[0] = 3'd3; 
-		reel2_sequence[1] = 3'd0;
-		reel2_sequence[2] = 3'd6; 
-		reel2_sequence[3] = 3'd2;
-		reel2_sequence[4] = 3'd4; 
-		reel2_sequence[5] = 3'd1;
-		reel2_sequence[6] = 3'd5; 
-		
-		// Reel 3: shuffled, no consecutive-value adjacency
-		reel3_sequence[0] = 3'd2; 
-		reel3_sequence[1] = 3'd5;
-		reel3_sequence[2] = 3'd0; 
-		reel3_sequence[3] = 3'd3;
-		reel3_sequence[4] = 3'd6; 
-		reel3_sequence[5] = 3'd1;
-		reel3_sequence[6] = 3'd4; 
-	end
+        // Reel 1: sequential
+        reel1_sequence[0] = 3'd0; 
+        reel1_sequence[1] = 3'd1;
+        reel1_sequence[2] = 3'd2; 
+        reel1_sequence[3] = 3'd3;
+        reel1_sequence[4] = 3'd4; 
+        reel1_sequence[5] = 3'd5;
+        reel1_sequence[6] = 3'd6;  
+        
+        // Reel 2: shuffled
+        reel2_sequence[0] = 3'd2; 
+        reel2_sequence[1] = 3'd5;
+        reel2_sequence[2] = 3'd0; 
+        reel2_sequence[3] = 3'd6;
+        reel2_sequence[4] = 3'd3; 
+        reel2_sequence[5] = 3'd1;
+        reel2_sequence[6] = 3'd4; 
+        
+        // Reel 3: different shuffle
+        reel3_sequence[0] = 3'd5; 
+        reel3_sequence[1] = 3'd3;
+        reel3_sequence[2] = 3'd1; 
+        reel3_sequence[3] = 3'd4;
+        reel3_sequence[4] = 3'd2; 
+        reel3_sequence[5] = 3'd0;
+        reel3_sequence[6] = 3'd6; 
+    end
 
     logic [9:0] reel1_offset, reel2_offset, reel3_offset;
     logic [9:0] next_reel1_offset, next_reel2_offset, next_reel3_offset;
@@ -81,43 +81,42 @@ module memory_controller (
     ///////////////////////
     // Target sprite calculation
     logic [9:0] centering_offset;
-    assign centering_offset = (REEL_DISPLAY_HEIGHT / 2) - (SPRITE_HEIGHT); // not dividng by 2 for sprite height bc we're already scaling to 128
+    assign centering_offset = (REEL_DISPLAY_HEIGHT / 2) - (SPRITE_HEIGHT / 2);
 
     logic [2:0] reel1_target_pos, reel2_target_pos, reel3_target_pos;
     
     always_comb begin
-		// Reel 1 - sequential
-		reel1_target_pos = reel1_final_sprite;
-
-		// Reel 2
-		case (reel2_final_sprite)
-			3'd3: reel2_target_pos = 3'd0;
-			3'd0: reel2_target_pos = 3'd1;
-			3'd6: reel2_target_pos = 3'd2;
-			3'd2: reel2_target_pos = 3'd3;
-			3'd4: reel2_target_pos = 3'd4;
-			3'd1: reel2_target_pos = 3'd5;
-			3'd5: reel2_target_pos = 3'd6;
-			default: reel2_target_pos = 3'd0;
-		endcase
-
-		// Reel 3
-		case (reel3_final_sprite)
-			3'd2: reel3_target_pos = 3'd0;
-			3'd5: reel3_target_pos = 3'd1;
-			3'd0: reel3_target_pos = 3'd2;
-			3'd3: reel3_target_pos = 3'd3;
-			3'd6: reel3_target_pos = 3'd4;
-			3'd1: reel3_target_pos = 3'd5;
-			3'd4: reel3_target_pos = 3'd6;
-			default: reel3_target_pos = 3'd0;
-		endcase
-	end
-
+        // Reel 1 - sequential
+        reel1_target_pos = reel1_final_sprite;
+        
+        // Reel 2
+        case (reel2_final_sprite)
+            3'd2: reel2_target_pos = 3'd0;
+            3'd5: reel2_target_pos = 3'd1;
+            3'd0: reel2_target_pos = 3'd2;
+            3'd6: reel2_target_pos = 3'd3;
+            3'd3: reel2_target_pos = 3'd4;
+            3'd1: reel2_target_pos = 3'd5;
+            3'd4: reel2_target_pos = 3'd6;
+            default: reel2_target_pos = 3'd0;
+        endcase
+        
+        // Reel 3
+        case (reel3_final_sprite)
+            3'd5: reel3_target_pos = 3'd0;
+            3'd3: reel3_target_pos = 3'd1;
+            3'd1: reel3_target_pos = 3'd2;
+            3'd4: reel3_target_pos = 3'd3;
+            3'd2: reel3_target_pos = 3'd4;
+            3'd0: reel3_target_pos = 3'd5;
+            3'd6: reel3_target_pos = 3'd6;
+            default: reel3_target_pos = 3'd0;
+        endcase
+    end
     
-    //assign reel1_ending_offset = (reel1_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
-    //assign reel2_ending_offset = (reel2_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
-    //assign reel3_ending_offset = (reel3_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
+    assign reel1_ending_offset = (reel1_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
+    assign reel2_ending_offset = (reel2_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
+    assign reel3_ending_offset = (reel3_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
     ///////////////////////////////
 
     logic vsync_prev;
@@ -141,7 +140,7 @@ module memory_controller (
             reel1_offset <= 0;
             reel2_offset <= 0;
             reel3_offset <= 0;
-            reel1_spin_amt <= 3'd3;
+            reel1_spin_amt <= 3'd5;
             reel2_spin_amt <= 3'd1;
             reel3_spin_amt <= 3'd1;
             reel1_final_sprite <= 0;
@@ -164,21 +163,6 @@ module memory_controller (
                 reel2_spin_amt <= next_reel2_spin_amt;
                 reel3_spin_amt <= next_reel3_spin_amt;
                 state_led <= next_state_led;
-				
-				reel1_final_sprite <= final1_sprite;
-                reel2_final_sprite <= final2_sprite;
-                reel3_final_sprite <= final3_sprite;
-				
-				if (reel1_spin_amt == 0) begin
-					reel1_ending_offset <= (reel1_target_pos * (SPRITE_HEIGHT + SPRITE_HEIGHT) + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
-				end
-				if (reel2_spin_amt == 0) begin
-					reel2_ending_offset <= (reel2_target_pos * (SPRITE_HEIGHT + SPRITE_HEIGHT) + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
-				end
-				if (reel3_spin_amt == 0) begin
-					reel3_ending_offset <= (reel3_target_pos * (SPRITE_HEIGHT + SPRITE_HEIGHT) + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
-				end
-				
             end
         end
     end
@@ -201,7 +185,7 @@ module memory_controller (
                     next_reel1_offset = reel1_offset;
                     next_reel2_offset = reel2_offset;
                     next_reel3_offset = reel3_offset;
-                    next_reel1_spin_amt = 3'd3;
+                    next_reel1_spin_amt = 3'd5;
                     next_reel2_spin_amt = 3'd2;
                     next_reel3_spin_amt = 3'd2;
                     next_state_led = 3'b000;
@@ -236,7 +220,7 @@ module memory_controller (
                 next_reel3_offset = reel3_offset + PIXELS_PER_FRAME;
 
                 if (reel1_offset != reel1_ending_offset) begin
-                    next_reel1_offset = reel1_offset + 12;
+                    next_reel1_offset = reel1_offset + 4;
                     if (next_reel1_offset >= TOTAL_HEIGHT) begin
                         next_reel1_offset = next_reel1_offset - TOTAL_HEIGHT;
                     end
@@ -270,7 +254,7 @@ module memory_controller (
                 next_reel3_offset = reel3_offset + PIXELS_PER_FRAME;
 
                 if (reel2_offset != reel2_ending_offset) begin
-                    next_reel2_offset = reel2_offset + 12;
+                    next_reel2_offset = reel2_offset + 4;
                     if (next_reel2_offset >= TOTAL_HEIGHT) begin
                         next_reel2_offset = next_reel2_offset - TOTAL_HEIGHT;
                     end
@@ -299,7 +283,7 @@ module memory_controller (
 
             REEL3_STOP: begin
                 if (reel3_offset != reel3_ending_offset) begin
-                    next_reel3_offset = reel3_offset + 12;
+                    next_reel3_offset = reel3_offset + 4;
                     if (next_reel3_offset >= TOTAL_HEIGHT) begin
                         next_reel3_offset = next_reel3_offset - TOTAL_HEIGHT;
                     end
@@ -569,15 +553,11 @@ module memory_controller (
 			if (inside_reel_r4) begin  
 				pixel_rgb = sprite_pixel_color;
 			end else begin
-				pixel_rgb = 3'b000;
+				pixel_rgb = 3'b111;
 			end
 		end else begin
 			pixel_rgb = 3'b000;
 		end
 	end 
-
-    `ifdef DV
-        `include "mem_ctrl_sva.svh"
-    `endif
 
 endmodule

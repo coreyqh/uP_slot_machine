@@ -20,14 +20,14 @@ module slot_machine_top (//input  logic clk,
     logic [10:0] hcount;
     logic [9:0] vcount;
 
-    logic [3:0]  reel1_idx, reel2_idx, reel3_idx;
+    logic [2:0]  reel1_idx, reel2_idx, reel3_idx;
     logic        start_spin;
     logic [11:0] win_credits;
     logic        is_win;
     logic [11:0] total_credits;
     logic        is_total;
     logic        active_video;
-	logic pll_clk_internal, pll_clock;
+	logic pll_clk_internal, pll_lock;
 
     /*
     spi_data_extract spi_data_extract (

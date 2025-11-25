@@ -12,10 +12,12 @@ module spi_data_extract (input  logic sclk,
                          output logic [11:0] win_credits, 
                          output logic is_win, 
                          output logic [11:0] total_credits, 
-                         output logic is_total);
+                         output logic is_total
+						 // output logic ready
+						 ); 
 
     logic [15:0] data;
-    logic [4:0] counter;
+    logic [3:0] counter;
     logic ready;
 
     localparam REQ_SPIN   = 4'b0001;
@@ -23,20 +25,28 @@ module spi_data_extract (input  logic sclk,
     localparam REQ_UPDATE = 4'b0011;
 
     always_ff @(posedge sclk, negedge reset_n) begin
-        if (!reset_n | cs) begin
+        if (!reset_n) begin
             data <= 16'b0;
             ready <= 0;
-            counter <= 5'b0;
+            counter <= 4'b0;
+        end else if (cs) begin  // cs high = inactive, reset
+            data <= 16'b0;
+            ready <= 0;
+            counter <= 4'b0;
         end else begin
-            if (!cs & (!ready)) begin // cs is active low
+            // cs is low (active)
+            if (!ready) begin  // only shift if not ready yet
                 data <= {data[14:0], copi};
 
-                if (counter == 5'd15) begin
+                if (counter == 4'd15) begin
                     ready <= 1;
+                    counter <= 4'b0;
+                end else begin
+                    counter <= counter + 4'd1;
+                    ready <= 0;
                 end
-
-                counter <= counter + 5'd1;
             end
+            // If ready is already high, don't shift anymore until cs goes high
         end
     end
 
@@ -54,7 +64,7 @@ module spi_data_extract (input  logic sclk,
             start_spin <= 0;
             is_win <= 0;
             is_total <= 0;
-            
+
             if (ready) begin
                 case (data[15:12]) // make sure value is retained
                     REQ_SPIN: begin
@@ -82,6 +92,8 @@ module spi_data_extract (input  logic sclk,
                         start_spin <= 0;
                         is_win <= 0;
                     end
+
+                    default: // do nothing
                 endcase
             end
         end

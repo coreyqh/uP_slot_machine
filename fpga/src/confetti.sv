@@ -97,26 +97,24 @@ always_ff @(posedge clk, negedge reset_n) begin
     end
 end
 
-// Fall speed counter - update positions every ~400k cycles (~60Hz at 25MHz)
+// Combined fall counter and position update logic
+integer i;
 always_ff @(posedge clk, negedge reset_n) begin
     if (!reset_n) begin
         fall_counter <= 0;
-    end else if (show_confetti) begin
-        fall_counter <= fall_counter + 1;
-    end else begin
-        fall_counter <= 0;
-    end
-end
-
-// Update confetti positions when counter rolls over
-integer i;
-always_ff @(posedge clk, negedge reset_n) begin
-    if (!reset_n || !show_confetti) begin
         // Initialize confetti at random positions at top of screen
         for (i = 0; i < 32; i = i + 1) begin
-            confetti_x[i] <= (lfsr ^ (i * 101)) % 640;  // Random X across screen
-            confetti_y[i] <= ((lfsr >> 3) ^ (i * 73)) % 100;  // Stagger starting heights
+            confetti_x[i] <= (16'hACE1 ^ (i * 101)) % 640;  // Random X across screen
+            confetti_y[i] <= ((16'hACE1 >> 3) ^ (i * 73)) % 100;  // Stagger starting heights
             confetti_c[i] <= (i % 6);  // Rainbow colors
+        end
+    end else if (!show_confetti) begin
+        fall_counter <= 0;
+        // Re-initialize when confetti turns off
+        for (i = 0; i < 32; i = i + 1) begin
+            confetti_x[i] <= (lfsr ^ (i * 101)) % 640;
+            confetti_y[i] <= ((lfsr >> 3) ^ (i * 73)) % 100;
+            confetti_c[i] <= (i % 6);
         end
     end else if (fall_counter == 24'd416666) begin  // ~60Hz update
         fall_counter <= 0;
@@ -132,6 +130,8 @@ always_ff @(posedge clk, negedge reset_n) begin
                 confetti_c[i] <= ((confetti_c[i] + 1) % 6);  // Cycle color
             end
         end
+    end else begin
+        fall_counter <= fall_counter + 1;
     end
 end
 

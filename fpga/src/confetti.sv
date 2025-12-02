@@ -210,3 +210,49 @@ always_comb begin
         pixel_rgb = 3'b000;
     end
 end
+
+
+// flashing border:
+logic [23:0] flash_counter;
+logic flash_on;
+
+always_ff @(posedge clk, negedge reset_n) begin
+    if (!reset_n) begin
+        flash_counter <= 0;
+    end else if (done && is_win) begin
+        flash_counter <= flash_counter + 1;
+    end else begin
+        flash_counter <= 0;
+    end
+end
+
+// Flash at ~6Hz (toggle every ~4M cycles at 25MHz)
+assign flash_on = flash_counter[21];
+
+// Change border from yellow to rainbow when winning
+logic [2:0] win_border_color;
+always_comb begin
+    case (flash_counter[23:22])  // Cycle through colors
+        2'd0: win_border_color = 3'b100;  // Red
+        2'd1: win_border_color = 3'b110;  // Yellow
+        2'd2: win_border_color = 3'b010;  // Green
+        2'd3: win_border_color = 3'b011;  // Cyan
+    endcase
+end
+
+// In your output logic:
+always_comb begin 
+    if (active_video_d4) begin 
+        if (is_yellow_border_r4 && (done && is_win) && flash_on) begin
+            pixel_rgb = win_border_color;  // Rainbow flashing border
+        end else if (is_yellow_border_r4) begin
+            pixel_rgb = 3'b110;  // Normal yellow
+        end else if (inside_reel_r4) begin  
+            pixel_rgb = sprite_pixel_color;
+        end else begin
+            pixel_rgb = 3'b000;
+        end
+    end else begin
+        pixel_rgb = 3'b000;
+    end
+end

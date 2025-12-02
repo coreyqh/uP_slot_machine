@@ -5,7 +5,7 @@
 // Include the device header
 #include "main.h"
 #include <stm32l432xx.h>
-#include "C:\Users\chickson\workspace\uP_slot_machine\mcu\lib\STM32L432KC.h"
+#include "C:\Users\sanarayanan\mcu\uP_slot_machine\mcu\lib\STM32L432KC.h"
 
 uint8_t update_pending = 0;
 uint8_t credit_count   = 10; // FIXME: 10 for debug
@@ -22,6 +22,15 @@ int main(void) {
   pinMode(DONE_PIN,   GPIO_INPUT);
 
   initSPI(BR, CPOL, CPHA);
+  digitalWrite(SPI_CE, PIO_HIGH);
+
+  GPIOA->PUPDR &= ~(0b11 << (2*gpioPinOffset(BUTTON_PIN)));// reset pull up/down 
+  GPIOA->PUPDR &= ~(0b11 << (2*gpioPinOffset(COIN_PIN)));// reset pull up/down 
+  GPIOA->PUPDR &= ~(0b11 << (2*gpioPinOffset(DONE_PIN)));// reset pull up/down 
+
+  GPIOA->PUPDR |= (0b10 << (2*gpioPinOffset(BUTTON_PIN)));// set pull down 
+  GPIOA->PUPDR |= (0b10 << (2*gpioPinOffset(DONE_PIN)));// set pull down
+  GPIOA->PUPDR |= (0b01 << (2*gpioPinOffset(COIN_PIN)));// set pull up
 
 
   // 1. Enable SYSCFG clock domain in RCC
@@ -73,17 +82,19 @@ int main(void) {
   while(1) {
 
     if (update_pending) {
+      
       credits_BCD = binToBCD3(credit_count);
-      // 2 most significant digits in bits 15:8
-      spi_data_upper = credits_BCD >> 4;
-      // least significant digit and update code in bits 7:0
-      spi_data_lower = ((credits_BCD << 4) & 0x00FF) | REQ_UPDATE;
+      
+      // upd req and most sig digit in bits 15:8
+      spi_data_upper = (REQ_UPDATE << 4) | (credits_BCD >> 8);
+      // least sig 2 digits in bits 7:0
+      spi_data_lower = credits_BCD & 0x00FF;
 
       // send update request
-      digitalWrite(SPI_CE, PIO_HIGH);
+      digitalWrite(SPI_CE, PIO_LOW);
       spiSendReceive(spi_data_upper);
       spiSendReceive(spi_data_lower);
-      digitalWrite(SPI_CE, PIO_LOW);
+      digitalWrite(SPI_CE, PIO_HIGH);
 
       // clear pending flag
       update_pending = 0;
@@ -98,31 +109,30 @@ int main(void) {
         winnings     = wager * calcWinnings(reel1, reel2, reel3);
         winnings_BCD = binToBCD3((winnings >= 100) ? 99 : winnings); // saturate at 99 for 7-segs
 
-        // sprite indeces for reel 1 and 2 bits 15:8
-        spi_data_upper = ((reel1 & 0x000F) << 4) | (reel2 & 0x000F);
-        // least significant digit and update code in bits 7:0
-        spi_data_lower = ((reel3 & 0x000F) << 4) | REQ_SPIN;
+        // spin req and reel 1 in bits 15:8
+        spi_data_upper = (REQ_SPIN << 4) | (reel1 & 0x000F);
+        // reels 2-3 in bits 7:0
+        spi_data_lower = (reel2 << 4)    | (reel3 & 0x000F);
 
         // send spin request
-        digitalWrite(SPI_CE, PIO_HIGH);
+        digitalWrite(SPI_CE, PIO_LOW);
         spiSendReceive(spi_data_upper);
         spiSendReceive(spi_data_lower);
-        digitalWrite(SPI_CE, PIO_LOW);
+        digitalWrite(SPI_CE, PIO_HIGH);
 
         while (!done); // wait for done signal irq from FPGA
         done = 0;
 
-
-        // most significant digits in bits 11:8
-        spi_data_upper = winnings_BCD >> 4;
-        // least significant digit and win code in bits 7:0
-        spi_data_lower = ((winnings_BCD << 4) & 0x00FF) | REQ_WIN;
+        // win req in bits 15:12
+        spi_data_upper = (REQ_WIN << 4);
+        // winnings in BCD in bit 7:0
+        spi_data_upper = winnings_BCD & 0x00FF;
 
         // send win request
-        digitalWrite(SPI_CE, PIO_HIGH);
+        digitalWrite(SPI_CE, PIO_LOW);
         spiSendReceive(spi_data_upper);
         spiSendReceive(spi_data_lower);
-        digitalWrite(SPI_CE, PIO_LOW);
+        digitalWrite(SPI_CE, PIO_HIGH);
 
         // trigger credit update for next loop iteration
         credit_count += winnings - wager;

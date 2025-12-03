@@ -219,7 +219,6 @@ uint16_t binToBCD3(uint16_t binary_val) {
     return bcd_result;
 }
 
-
 uint16_t calcWinnings(uint8_t r1, uint8_t r2, uint8_t r3) {
     uint16_t winnings = 0;
 
@@ -272,13 +271,29 @@ uint16_t calcWinnings(uint8_t r1, uint8_t r2, uint8_t r3) {
     // --- Case 3: Mixed bars without wild ---
     else {
         int barCount = 0;
-        if (r1 == BAR_IDX) barCount += 1;
-        if (r2 == BAR_IDX) barCount += 1;
-        if (r3 == BAR_IDX) barCount += 1;
-        if (r1 == TPLBAR_IDX) barCount += 3;
-        if (r2 == TPLBAR_IDX) barCount += 3;
-        if (r3 == TPLBAR_IDX) barCount += 3;
 
+        if      (r1 == BAR_IDX) barCount += 1;
+        else if (r1 == TPLBAR_IDX) barCount += 3;
+        else {
+            barCount = 0;
+            goto nobars;
+        }
+
+        if      (r2 == BAR_IDX) barCount += 1;
+        else if (r2 == TPLBAR_IDX) barCount += 3;
+        else {
+            barCount = 0;
+            goto nobars;
+        } 
+
+        if      (r3 == BAR_IDX) barCount += 1;
+        else if (r3 == TPLBAR_IDX) barCount += 3;
+        else {
+            barCount = 0;
+            goto nobars;
+        }
+
+        nobars:
         if (barCount > 0) winnings = barCount;
     }
 

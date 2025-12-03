@@ -96,6 +96,7 @@ module spi_data_extract (input  logic sclk,
 
                     default: begin // do nothing
 						// do nothing
+						start_spin <= 0;
 					end
                 endcase
             end

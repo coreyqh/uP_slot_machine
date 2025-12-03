@@ -61,8 +61,8 @@ module rom_wrapper (
     assign rom_en[27] = (sprite_sel_i == 3'd6) && (bram_sel == 2'd3);
 
     // EBR-based sprites (0-3)
-    //r1  r1_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r1_data));
-    //r2  r2_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r2_data));
+    r1  r1_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r1_data));
+    r2  r2_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r2_data));
     //r3  r3_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r3_data));
     //r4  r4_ip  (.rd_clk_i(clk), .rst_i(1'b0), .rd_en_i(1), .rd_clk_en_i(1'b1), .rd_addr_i(bram_addr), .rd_data_o(r4_data));
     
@@ -83,10 +83,10 @@ module rom_wrapper (
  
 	
 
-	rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom0.mem"), .UNIQUE_ID(1)) 
-        r1_inst (.clk(clk), .address(bram_addr), .dout(r1_data));
-    rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom1.mem"), .UNIQUE_ID(2)) 
-        r2_inst (.clk(clk), .address(bram_addr), .dout(r2_data));
+	//rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom0.mem"), .UNIQUE_ID(1)) 
+        //r1_inst (.clk(clk), .address(bram_addr), .dout(r1_data));
+    //rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom1.mem"), .UNIQUE_ID(2)) 
+        //r2_inst (.clk(clk), .address(bram_addr), .dout(r2_data));
     rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom2.mem"), .UNIQUE_ID(3)) 
         r3_inst (.clk(clk), .address(bram_addr), .dout(r3_data));
     rom_sync #(.text_file("C:/Users/sanarayanan/my_designs/Slot_Machine_Final/source/impl_1/sprite_rom3.mem"), .UNIQUE_ID(4)) 
@@ -350,3 +350,4 @@ module rom_wrapper (
     // assign data_o = data_o_reg;
     
 endmodule
+

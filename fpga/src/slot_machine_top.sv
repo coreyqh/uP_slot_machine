@@ -1,6 +1,10 @@
-module slot_machine_top (//input  logic clk, 
-                         input  logic reset_n,
+// E155, Top level module to start the spinning reels after SPI
 
+// Name: Sadhvi Narayanan
+// Email: sanarayanan@g.hmc.edu
+// Date: 12/04/2025
+
+module slot_machine_top (input  logic reset_n,
                          input  logic sclk, 
                          input  logic copi, 
                          input  logic cs, 
@@ -9,18 +13,18 @@ module slot_machine_top (//input  logic clk,
                          output logic hsync, 
                          output logic vsync,
                          output logic [2:0] vga_rgb,
-                         output logic done,
-						 //output logic debug_pll_clk,
-						 //output logic [2:0] state_led,
-						 //output logic ready, 
+                         
+						 output logic done,
                         
                          output logic [4:0] select,
                          output logic [6:0] seven_segment_output 
 						 );
 
+	// vga counters
     logic [10:0] hcount; 
     logic [9:0] vcount;
 
+	// internal signals for game logic
     logic [2:0]  reel1_idx, reel2_idx, reel3_idx;
     logic        start_spin;
     logic [11:0] win_credits;
@@ -28,9 +32,12 @@ module slot_machine_top (//input  logic clk,
     logic [11:0] total_credits;
     logic        is_total;
     logic        active_video;
+	
+	// pll clock signals
 	logic pll_clk_internal, pll_lock;
 
-    
+
+    // spi module (fpga is the peripheral)
     spi_data_extract spi_data_extract (
         .sclk          (sclk),
 		.clk		   (pll_clk_internal),
@@ -49,7 +56,7 @@ module slot_machine_top (//input  logic clk,
 		.ready		    (ready)
     );
 	
-	
+	// pll clock to get 25.5 MHz for VGA
      pll_clock #(
 		.CLKHF_DIV("0b00"),
         .DIVR("0"),
@@ -63,6 +70,8 @@ module slot_machine_top (//input  logic clk,
         .locked      (pll_lock)
     );
 
+	// produces hsync + vsync for VGA
+	// outputs {v|h}count for memory addressing logic
     vga_controller vga_controller (
         .clk           (pll_clk_internal),
         .reset_n       (reset_n & pll_lock),
@@ -72,11 +81,8 @@ module slot_machine_top (//input  logic clk,
         .vcount        (vcount),
         .active_video  (active_video)
     );
-	//assign reel1_idx = 0;
-	//assign reel2_idx = 6;
-	//assign reel3_idx = 4;
-	//assign start_spin = 1;
 
+	// main reel control module to handle moving reels and reel stopping
     memory_controller u_memory_controller ( 
         .clk              (pll_clk_internal),
         .reset_n          (reset_n & pll_lock),
@@ -84,12 +90,12 @@ module slot_machine_top (//input  logic clk,
         .vcount           (vcount),
         .vsync            (vsync),
         .active_video     (active_video),
-        .final1_sprite    (reel1_idx[2:0]),  // assuming 3-bit sprite IDs
+        .final1_sprite    (reel1_idx[2:0]),
         .final2_sprite    (reel2_idx[2:0]),
         .final3_sprite    (reel3_idx[2:0]),
         .start_spin       (start_spin),
         .pixel_rgb        (vga_rgb),
-        .done             (done), // so far only done for hwen finished spinning since havent done update points stuff
+        .done             (done),
 		.state_led		  (state_led)
     );
 
@@ -105,10 +111,5 @@ module slot_machine_top (//input  logic clk,
 		.enable_sel(select),
 		.seg(seven_segment_output)
 	);
-    // ROM block --> muxing
-
-	//assign select = 5'b10111;
-	//assign seven_segment_output = 7'b1111000;
-
 
 endmodule

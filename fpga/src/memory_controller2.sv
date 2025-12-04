@@ -24,10 +24,14 @@ module memory_controller (
     localparam REEL1_START_H = 190;
     localparam REEL2_START_H = 398;
     localparam REEL3_START_H = 606;
-    localparam REELS_START_V = 50;
+    localparam REELS_START_V = 60;
     localparam REEL_DISPLAY_HEIGHT = 430;
     localparam REELS_END_V = REELS_START_V + REEL_DISPLAY_HEIGHT - 1;
-    localparam PIXELS_PER_FRAME = 12;
+    localparam PIXELS_PER_FRAME = 24;
+
+    localparam MIDDLE_ROW_TOP = REEL_DISPLAY_HEIGHT / 2 /* Y position of middle row */;
+    localparam MIDDLE_ROW_BOTTOM = MIDDLE_ROW_TOP + SPRITE_HEIGHT * 2; // *2 if scaled
+    localparam BORDER_WIDTH = 4; // Border thickness in pixels
     
     // Reel sequences (LUTs)
     logic [2:0] reel1_sequence [0:6];
@@ -35,33 +39,33 @@ module memory_controller (
     logic [2:0] reel3_sequence [0:6];
     
     initial begin
-        // Reel 1: sequential
-        reel1_sequence[0] = 3'd0; 
-        reel1_sequence[1] = 3'd1;
-        reel1_sequence[2] = 3'd2; 
-        reel1_sequence[3] = 3'd3;
-        reel1_sequence[4] = 3'd4; 
-        reel1_sequence[5] = 3'd5;
-        reel1_sequence[6] = 3'd6;  
-        
-        // Reel 2: shuffled
-        reel2_sequence[0] = 3'd2; 
-        reel2_sequence[1] = 3'd5;
-        reel2_sequence[2] = 3'd0; 
-        reel2_sequence[3] = 3'd6;
-        reel2_sequence[4] = 3'd3; 
-        reel2_sequence[5] = 3'd1;
-        reel2_sequence[6] = 3'd4; 
-        
-        // Reel 3: different shuffle
-        reel3_sequence[0] = 3'd5; 
-        reel3_sequence[1] = 3'd3;
-        reel3_sequence[2] = 3'd1; 
-        reel3_sequence[3] = 3'd4;
-        reel3_sequence[4] = 3'd2; 
-        reel3_sequence[5] = 3'd0;
-        reel3_sequence[6] = 3'd6; 
-    end
+		// Reel 1: sequential (no restriction)
+		reel1_sequence[0] = 3'd0; 
+		reel1_sequence[1] = 3'd1;
+		reel1_sequence[2] = 3'd2; 
+		reel1_sequence[3] = 3'd3;
+		reel1_sequence[4] = 3'd4; 
+		reel1_sequence[5] = 3'd5;
+		reel1_sequence[6] = 3'd6;  
+		
+		// Reel 2: shuffled, no consecutive-value adjacency
+		reel2_sequence[0] = 3'd3; 
+		reel2_sequence[1] = 3'd0;
+		reel2_sequence[2] = 3'd6; 
+		reel2_sequence[3] = 3'd2;
+		reel2_sequence[4] = 3'd4; 
+		reel2_sequence[5] = 3'd1;
+		reel2_sequence[6] = 3'd5; 
+		
+		// Reel 3: shuffled, no consecutive-value adjacency
+		reel3_sequence[0] = 3'd2; 
+		reel3_sequence[1] = 3'd5;
+		reel3_sequence[2] = 3'd0; 
+		reel3_sequence[3] = 3'd3;
+		reel3_sequence[4] = 3'd6; 
+		reel3_sequence[5] = 3'd1;
+		reel3_sequence[6] = 3'd4; 
+	end
 
     logic [9:0] reel1_offset, reel2_offset, reel3_offset;
     logic [9:0] next_reel1_offset, next_reel2_offset, next_reel3_offset;
@@ -81,42 +85,43 @@ module memory_controller (
     ///////////////////////
     // Target sprite calculation
     logic [9:0] centering_offset;
-    assign centering_offset = (REEL_DISPLAY_HEIGHT / 2) - (SPRITE_HEIGHT / 2);
+    assign centering_offset = (REEL_DISPLAY_HEIGHT / 2) - (SPRITE_HEIGHT); // not dividng by 2 for sprite height bc we're already scaling to 128
 
     logic [2:0] reel1_target_pos, reel2_target_pos, reel3_target_pos;
     
     always_comb begin
-        // Reel 1 - sequential
-        reel1_target_pos = reel1_final_sprite;
-        
-        // Reel 2
-        case (reel2_final_sprite)
-            3'd2: reel2_target_pos = 3'd0;
-            3'd5: reel2_target_pos = 3'd1;
-            3'd0: reel2_target_pos = 3'd2;
-            3'd6: reel2_target_pos = 3'd3;
-            3'd3: reel2_target_pos = 3'd4;
-            3'd1: reel2_target_pos = 3'd5;
-            3'd4: reel2_target_pos = 3'd6;
-            default: reel2_target_pos = 3'd0;
-        endcase
-        
-        // Reel 3
-        case (reel3_final_sprite)
-            3'd5: reel3_target_pos = 3'd0;
-            3'd3: reel3_target_pos = 3'd1;
-            3'd1: reel3_target_pos = 3'd2;
-            3'd4: reel3_target_pos = 3'd3;
-            3'd2: reel3_target_pos = 3'd4;
-            3'd0: reel3_target_pos = 3'd5;
-            3'd6: reel3_target_pos = 3'd6;
-            default: reel3_target_pos = 3'd0;
-        endcase
-    end
+		// Reel 1 - sequential
+		reel1_target_pos = reel1_final_sprite;
+
+		// Reel 2
+		case (reel2_final_sprite)
+			3'd3: reel2_target_pos = 3'd0;
+			3'd0: reel2_target_pos = 3'd1;
+			3'd6: reel2_target_pos = 3'd2;
+			3'd2: reel2_target_pos = 3'd3;
+			3'd4: reel2_target_pos = 3'd4;
+			3'd1: reel2_target_pos = 3'd5;
+			3'd5: reel2_target_pos = 3'd6;
+			default: reel2_target_pos = 3'd0;
+		endcase
+
+		// Reel 3
+		case (reel3_final_sprite)
+			3'd2: reel3_target_pos = 3'd0;
+			3'd5: reel3_target_pos = 3'd1;
+			3'd0: reel3_target_pos = 3'd2;
+			3'd3: reel3_target_pos = 3'd3;
+			3'd6: reel3_target_pos = 3'd4;
+			3'd1: reel3_target_pos = 3'd5;
+			3'd4: reel3_target_pos = 3'd6;
+			default: reel3_target_pos = 3'd0;
+		endcase
+	end
+
     
-    assign reel1_ending_offset = (reel1_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
-    assign reel2_ending_offset = (reel2_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
-    assign reel3_ending_offset = (reel3_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
+    //assign reel1_ending_offset = (reel1_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
+    //assign reel2_ending_offset = (reel2_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
+    //assign reel3_ending_offset = (reel3_target_pos * SPRITE_HEIGHT + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
     ///////////////////////////////
 
     logic vsync_prev;
@@ -140,7 +145,7 @@ module memory_controller (
             reel1_offset <= 0;
             reel2_offset <= 0;
             reel3_offset <= 0;
-            reel1_spin_amt <= 3'd5;
+            reel1_spin_amt <= 3'd3;
             reel2_spin_amt <= 3'd1;
             reel3_spin_amt <= 3'd1;
             reel1_final_sprite <= 0;
@@ -163,6 +168,21 @@ module memory_controller (
                 reel2_spin_amt <= next_reel2_spin_amt;
                 reel3_spin_amt <= next_reel3_spin_amt;
                 state_led <= next_state_led;
+				
+				reel1_final_sprite <= final1_sprite;
+                reel2_final_sprite <= final2_sprite;
+                reel3_final_sprite <= final3_sprite;
+				
+				if (reel1_spin_amt == 0) begin
+					reel1_ending_offset <= (reel1_target_pos * (SPRITE_HEIGHT + SPRITE_HEIGHT) + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
+				end
+				if (reel2_spin_amt == 0) begin
+					reel2_ending_offset <= (reel2_target_pos * (SPRITE_HEIGHT + SPRITE_HEIGHT) + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
+				end
+				if (reel3_spin_amt == 0) begin
+					reel3_ending_offset <= (reel3_target_pos * (SPRITE_HEIGHT + SPRITE_HEIGHT) + TOTAL_HEIGHT - centering_offset) % TOTAL_HEIGHT;
+				end
+				
             end
         end
     end
@@ -185,7 +205,7 @@ module memory_controller (
                     next_reel1_offset = reel1_offset;
                     next_reel2_offset = reel2_offset;
                     next_reel3_offset = reel3_offset;
-                    next_reel1_spin_amt = 3'd5;
+                    next_reel1_spin_amt = 3'd3;
                     next_reel2_spin_amt = 3'd2;
                     next_reel3_spin_amt = 3'd2;
                     next_state_led = 3'b000;
@@ -220,7 +240,7 @@ module memory_controller (
                 next_reel3_offset = reel3_offset + PIXELS_PER_FRAME;
 
                 if (reel1_offset != reel1_ending_offset) begin
-                    next_reel1_offset = reel1_offset + 4;
+                    next_reel1_offset = reel1_offset + 12;
                     if (next_reel1_offset >= TOTAL_HEIGHT) begin
                         next_reel1_offset = next_reel1_offset - TOTAL_HEIGHT;
                     end
@@ -254,7 +274,7 @@ module memory_controller (
                 next_reel3_offset = reel3_offset + PIXELS_PER_FRAME;
 
                 if (reel2_offset != reel2_ending_offset) begin
-                    next_reel2_offset = reel2_offset + 4;
+                    next_reel2_offset = reel2_offset + 12;
                     if (next_reel2_offset >= TOTAL_HEIGHT) begin
                         next_reel2_offset = next_reel2_offset - TOTAL_HEIGHT;
                     end
@@ -283,7 +303,7 @@ module memory_controller (
 
             REEL3_STOP: begin
                 if (reel3_offset != reel3_ending_offset) begin
-                    next_reel3_offset = reel3_offset + 4;
+                    next_reel3_offset = reel3_offset + 12;
                     if (next_reel3_offset >= TOTAL_HEIGHT) begin
                         next_reel3_offset = next_reel3_offset - TOTAL_HEIGHT;
                     end
@@ -296,7 +316,7 @@ module memory_controller (
                             next_reel3_offset = reel3_ending_offset;
                     end
                 end else begin
-                    next_state = DEAD;
+                    next_state = IDLE;
                     done = 1;
                 end
                 
@@ -319,6 +339,7 @@ module memory_controller (
     logic [9:0] y_in_reel;
     logic [2:0] seq_pos;
     logic inside_reel_comb;
+    logic is_yellow_border;
     
     assign inside_reel1_prev = (hcount >= REEL1_START_H && hcount < REEL1_START_H + SPRITE_WIDTH + SPRITE_WIDTH) && 
                                (vcount >= REELS_START_V && vcount < REELS_END_V);
@@ -355,6 +376,28 @@ module memory_controller (
             y_in_sprite = y_in_reel[6:1];
         end
     end
+
+
+    always_comb begin
+        is_yellow_border = 0;
+        
+        // Top and bottom horizontal borders
+        if ((vcount >= MIDDLE_ROW_TOP - BORDER_WIDTH && vcount < MIDDLE_ROW_TOP) ||
+            (vcount > MIDDLE_ROW_BOTTOM && vcount <= MIDDLE_ROW_BOTTOM + BORDER_WIDTH)) begin
+            if (inside_reel_comb) begin
+                is_yellow_border = 1;
+            end
+        end
+        
+        // Left and right vertical borders
+        if (vcount >= MIDDLE_ROW_TOP && vcount <= MIDDLE_ROW_BOTTOM) begin
+            if ((hcount >= REEL1_START_H - BORDER_WIDTH && hcount < REEL1_START_H) ||
+                (hcount > REEL3_START_H + SPRITE_WIDTH + SPRITE_WIDTH && 
+                hcount <= REEL3_START_H + SPRITE_WIDTH + SPRITE_WIDTH + BORDER_WIDTH)) begin
+                is_yellow_border = 1;
+            end
+        end
+    end
 	
 	// --- Signals for ROM Interface ---
     logic [9:0]  word_addr;     
@@ -375,6 +418,8 @@ module memory_controller (
     logic inside_reel_r;
     logic active_video_d1;
 
+    logic is_yellow_border_r1, is_yellow_border_r2, is_yellow_border_r3, is_yellow_border_r4, is_yellow_border_r5;
+
     always_ff @(posedge clk, negedge reset_n) begin
         if (!reset_n) begin
 			word_addr_r     <= 0;
@@ -382,12 +427,14 @@ module memory_controller (
             pixel_in_word_r <= 0;
             inside_reel_r   <= 0;
             active_video_d1 <= 0;
+            is_yellow_border_r1 <= 0;
 		end else begin
             word_addr_r     <= word_addr;
             sprite_idx_r    <= sprite_idx;
             pixel_in_word_r <= pixel_in_word;
             inside_reel_r   <= inside_reel_comb;
             active_video_d1 <= active_video;
+            is_yellow_border_r1 <= is_yellow_border;
         end
     end
 
@@ -418,21 +465,25 @@ module memory_controller (
 			sprite_idx_r2 <= 0;
 			
 			rom_data_r2 <= 16'd0; 
+            is_yellow_border_r2 <= 0;
 			
 			pixel_in_word_r3 <= 2'd0;
 			inside_reel_r3 <= 1'b0; 
 			active_video_d3 <= 1'b0;
 			sprite_idx_r3 <= 0;
+            is_yellow_border_r3 <= 0;
 			
 			pixel_in_word_r4 <= 0;
 			sprite_idx_r4 <= 0;
 			active_video_d4 <= 0;
 			inside_reel_r4 <= 0;
+            is_yellow_border_r4 <= 0;
 			
 			pixel_in_word_r5 <= 0;
 			active_video_d5 <= 0;
 			inside_reel_r5 <= 0;
 			sprite_idx_r5	<= 0;
+            is_yellow_border_r5 <= 0;
 			
 			pixel_in_word_r6 <= 0;
 			sprite_idx_r6 <= 0;
@@ -464,23 +515,27 @@ module memory_controller (
             inside_reel_r2   <= inside_reel_r;
             active_video_d2  <= active_video_d1;
 			sprite_idx_r2	<= sprite_idx_r;
+            is_yellow_border_r2 <= is_yellow_border_r1;
 			
 			pixel_in_word_r3 <= pixel_in_word_r2;
 			rom_data_r2 <= rom_data_r;
 			active_video_d3 <= active_video_d2;
 			inside_reel_r3 <= inside_reel_r2;
 			sprite_idx_r3	<= sprite_idx_r2;
+            is_yellow_border_r3 <= is_yellow_border_r2;
 			
 			pixel_in_word_r4 <= pixel_in_word_r3;
 			rom_data_r3 <= rom_data_r2;
 			active_video_d4 <= active_video_d3;
 			inside_reel_r4 <= inside_reel_r3;
 			sprite_idx_r4	<= sprite_idx_r3;
+            is_yellow_border_r4 <= is_yellow_border_r3;
 			
 			pixel_in_word_r5 <= pixel_in_word_r4;
 			active_video_d5 <= active_video_d4;
 			inside_reel_r5 <= inside_reel_r4;
 			sprite_idx_r5	<= sprite_idx_r4;
+            is_yellow_border_r5 <= is_yellow_border_r4;
 			
 			pixel_in_word_r6 <= pixel_in_word_r5;
 			sprite_idx_r6 <= sprite_idx_r5;
@@ -520,40 +575,15 @@ module memory_controller (
 		endcase
 	end
 
-
-	
-	
-	/*
-	always_comb begin
-		unique case (pixel_in_word_r3) 
-			2'd0: sprite_pixel_color = rom_data[15:13]; 
-			2'd1: sprite_pixel_color = rom_data[11:9];
-			2'd2: sprite_pixel_color = rom_data[7:5];
-			2'd3: sprite_pixel_color = rom_data[3:1];
-			default: sprite_pixel_color = 3'b000; 
-		endcase
-	end
-	*/
-	
-	/* --. works ish
-	always_comb begin
-		unique case (pixel_in_word_r3) 
-			2'd0: sprite_pixel_color = rom_data_r2[15:13]; 
-			2'd1: sprite_pixel_color = rom_data_r2[11:9];
-			2'd2: sprite_pixel_color = rom_data_r2[7:5];
-			2'd3: sprite_pixel_color = rom_data_r2[3:1];
-			default: sprite_pixel_color = 3'b000; 
-		endcase
-	end
-	*/
-
 	// output
 	always_comb begin 
 		if (active_video_d4) begin 
-			if (inside_reel_r4) begin  
+            if (is_yellow_border_r4) begin
+                pixel_rgb = 3'b110;
+            end else if (inside_reel_r4) begin  
 				pixel_rgb = sprite_pixel_color;
 			end else begin
-				pixel_rgb = 3'b111;
+				pixel_rgb = 3'b000;
 			end
 		end else begin
 			pixel_rgb = 3'b000;

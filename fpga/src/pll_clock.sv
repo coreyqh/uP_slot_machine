@@ -1,3 +1,9 @@
+// E155, Create a 25.5Mhz clock with PLL for our VGA
+
+// Name: Sadhvi Narayanan
+// Email: sanarayanan@g.hmc.edu
+// Date: 12/04/2025
+
 module pll_clock #(
     // HSOSC divider: "0b00"=48, "0b01"=24, "0b10"=12, "0b11"=6 MHz
     parameter string CLKHF_DIV,

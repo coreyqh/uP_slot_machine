@@ -1,3 +1,9 @@
+// E155, Various forms of ROM and RAM blocks with different cycle latency for use - ROM loads in a file
+
+// Name: Sadhvi Narayanan
+// Email: sanarayanan@g.hmc.edu
+// Date: 12/04/2025
+
 module rom_block2 #(
     parameter string text_file,
     parameter int UNIQUE_ID = 0  // Forces separate synthesis for each instance
@@ -11,17 +17,17 @@ module rom_block2 #(
     localparam TOTAL_WORDS = 256;
     localparam ADDRESS_WIDTH = 8;
     
+	// address
     logic [DATA_WIDTH-1:0] single_bram1 [0:TOTAL_WORDS-1];
     
+	// load in the file
     initial begin 
         $readmemh(text_file, single_bram1);
     end
 
+	// just a combinational LUT read
     assign dout = single_bram1[address]; 
     
-    // always_ff @(posedge clk) begin 
-    //     dout <= single_bram1[address]; 
-    // end
 endmodule
 
 
@@ -38,15 +44,17 @@ module rom_sync #(
     localparam TOTAL_WORDS = 256;
     localparam ADDRESS_WIDTH = 8;
     
+	// ROM storage for the data
     reg [DATA_WIDTH-1:0] single_bram1 [0:TOTAL_WORDS-1];
+	// ROM address (EBR)
     logic [DATA_WIDTH-1:0] pre_dout;
 
+	// load data from the file
     initial begin 
         $readmemh(text_file, single_bram1);
     end
-
-    // assign dout = single_bram1[address]; 
-    
+	
+	// two cycle latency registered output ROM read
      always_ff @(posedge clk) begin 
          pre_dout <= single_bram1[address]; 
          dout     <= pre_dout;
@@ -66,6 +74,7 @@ module rom_block3 #(
 );
 	logic [15:0] dout1;
     
+	// one cycle latency wrapper around combinational ROM to try an not force EBRs
     rom_block2 #(.text_file(text_file)) 
         r21_inst (.clk(clk), .address(address), .dout(dout1)); 
     
